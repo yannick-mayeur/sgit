@@ -28,7 +28,7 @@ object SgitParser extends App {
   OParser.parse(parser1, args, Config()) match {
     case Some(config) =>
       config match {
-        case Config(init, _, _, _, _) => println("init")
+        case Config(init, _, _, _, _) => Repository.initRepository(System.getProperty("user.dir"))
         case _ =>
       }
       println(config)
