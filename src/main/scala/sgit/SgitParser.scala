@@ -19,19 +19,24 @@ object SgitParser extends App {
       cmd("init")
         .text("Initialize a repository")
         .action((_, c) => c.copy(command = "init")),
+      cmd("test")
+        .text("test")
+        .action((_, c) => c.copy(command = "test")),
       checkConfig { c => c match {
         case Config("", _, _, _, _) => failure("No command given")
         case _ => success
       }}
     )
   }
+  val t1 = "abc"
+  val t2 = "abd"
   OParser.parse(parser1, args, Config()) match {
     case Some(config) =>
       config match {
-        case Config(init, _, _, _, _) => Repository.initRepository(System.getProperty("user.dir"))
+        case Config("init", _, _, _, _) => Repository.initRepository(System.getProperty("user.dir"))
+        case Config("test", _, _, _, _) => Diff.diffBetweenTexts(t1, t2)
         case _ =>
       }
-      println(config)
     case _ =>
       // arguments are bad, error message is displayed
   }
