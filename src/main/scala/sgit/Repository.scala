@@ -10,8 +10,12 @@ object Repository {
       val hasMadeSgit = new File(".sgit").mkdir()
       val files = List("HEAD", "STAGE")
       val folders = List("tags", "trees", "blobs", "branches")
-      val hasCreatedFolders = files.map((file) => new File(s".sgit${File.separator}$file").mkdir()).reduce(_ && _)
-      val hasCreatedFiles = folders.map(file => new File(s".sgit${File.separator}$file").createNewFile()).reduce(_ && _)
+      val hasCreatedFolders = files
+        .map((file) => new File(s".sgit${File.separator}$file").mkdir())
+        .reduce(_ && _)
+      val hasCreatedFiles = folders
+        .map(file => new File(s".sgit${File.separator}$file").createNewFile())
+        .reduce(_ && _)
     }
   }
 

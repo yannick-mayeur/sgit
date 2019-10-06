@@ -4,9 +4,11 @@ import java.security.MessageDigest
 
 object FileStatus {
   def getHashFor(string: String) = {
-    MessageDigest.getInstance("SHA-256")
+    MessageDigest
+      .getInstance("SHA-256")
       .digest(string.getBytes("UTF-8"))
-      .map("%02x".format(_)).mkString
+      .map("%02x".format(_))
+      .mkString
   }
 
   def getAllFiles(root: File): Array[String] = {
@@ -24,7 +26,9 @@ object FileStatus {
     println("Changes to be committed:")
     println("Changes not staged for commit:")
     println("  (use \"sgit add <file>...\" to update what will be committed)")
-    println("untracked files:\n  (use \"sgit add <file>...\" to include in what will be committed)")
+    println(
+      "untracked files:\n  (use \"sgit add <file>...\" to include in what will be committed)"
+    )
     getAllFiles(root).foreach(println)
   }
 }

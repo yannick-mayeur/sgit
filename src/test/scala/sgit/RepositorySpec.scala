@@ -37,7 +37,7 @@ class RepositrySpec extends FlatSpec with Matchers {
     Repository.initRepository(".")
     assert(Repository.isInRepository("."))
   }
-  
+
   it should "check if .sgit exists in parent directory" in {
     Repository.initRepository("..")
     assert(Repository.isInRepository("."))
