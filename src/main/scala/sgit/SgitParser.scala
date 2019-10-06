@@ -1,5 +1,6 @@
 package sgit
 import scopt.OParser
+import java.io.File
 
 case class Config(
   command: String = "",
@@ -19,6 +20,9 @@ object SgitParser extends App {
       cmd("init")
         .text("Initialize a repository")
         .action((_, c) => c.copy(command = "init")),
+      cmd("status")
+        .text("Print status of repository")
+        .action((_, c) => c.copy(command = "status")),
       cmd("test")
         .text("test")
         .action((_, c) => c.copy(command = "test")),
@@ -33,8 +37,9 @@ object SgitParser extends App {
   OParser.parse(parser1, args, Config()) match {
     case Some(config) =>
       config match {
-        case Config("init", _, _, _, _) => Repository.initRepository(System.getProperty("user.dir"))
-        case Config("test", _, _, _, _) => FileStatus.getAllFiles(".").foreach(println(_))
+        case Config("init", _, _, _, _)   => Repository.initRepository(System.getProperty("user.dir"))
+        case Config("status", _, _, _, _) => FileStatus.printStatus(new File("."))
+        case Config("test", _, _, _, _)   => FileStatus.getAllFiles(new File(System.getProperty("user.dir"))).foreach(println(_))
         case _ =>
       }
     case _ =>
