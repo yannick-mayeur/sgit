@@ -34,7 +34,7 @@ object SgitParser extends App {
     case Some(config) =>
       config match {
         case Config("init", _, _, _, _) => Repository.initRepository(System.getProperty("user.dir"))
-        case Config("test", _, _, _, _) => Diff.diffBetweenTexts(t1, t2)
+        case Config("test", _, _, _, _) => FileStatus.getAllFiles(".").foreach(println(_))
         case _ =>
       }
     case _ =>
