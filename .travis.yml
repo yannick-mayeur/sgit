@@ -3,7 +3,13 @@ language: scala
 jdk: openjdk8
 
 scala:
-   - 2.13.0
+  - 2.13.0
 
-script:
-  - sbt test
+jobs:
+  include:
+    - stage: test
+      script:
+        - sbt test
+    - stage: lint
+      script:
+        - sbt scalafmtCheckAll
