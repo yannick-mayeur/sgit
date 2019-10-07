@@ -2,11 +2,11 @@ package sgit
 import java.io.File
 import scala.annotation.tailrec
 
+case class Repository(sgitFile: File)
+
 object Repository {
   def initRepository(path: String): Unit = {
-    if (isInRepository(path)) {
-      println("tamer")
-    } else {
+    if (isInRepository(path)) {} else {
       val hasMadeSgit = new File(".sgit").mkdir()
       val files = List("HEAD", "STAGE")
       val folders = List("tags", "trees", "blobs", "branches")
@@ -33,5 +33,35 @@ object Repository {
       }
     }
     loop(path)
+  }
+
+  def getRepository(path: String) = {
+    @tailrec
+    def loop(currentPath: String): Option[Repository] = {
+      val currentSgitFile = new File(createSgitPath(currentPath))
+      val currentFile = new File(currentPath)
+      if (currentFile.getParent() != null) {
+        if (currentSgitFile.exists()) {
+          Some(Repository(currentSgitFile))
+        } else {
+          loop(currentFile.getParent())
+        }
+      } else {
+        if (currentSgitFile.exists()) {
+          Some(Repository(currentSgitFile))
+        } else {
+          None
+        }
+      }
+    }
+    loop(path)
+  }
+
+  val getRepositoryRootFolder = (repository: Repository) => {
+    val canonicalPathSgitFile = repository.sgitFile.getCanonicalPath()
+    canonicalPathSgitFile
+      .split(File.separator)
+      .dropRight(1)
+      .mkString(File.separator)
   }
 }
