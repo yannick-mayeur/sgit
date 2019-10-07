@@ -19,9 +19,10 @@ object Repository {
     }
   }
 
+  val createSgitPath = (path: String) => s"$path${File.separator}.sgit"
+
   def isInRepository(path: String): Boolean = {
-    val createSgitPath = (path: String) => s"$path${File.separator}.sgit"
-    // @tailrec
+    @tailrec
     def loop(currentPath: String): Boolean = {
       val currentSgitFile = new File(createSgitPath(currentPath))
       val currentFile = new File(currentPath)
