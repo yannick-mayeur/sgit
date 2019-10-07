@@ -35,8 +35,6 @@ object SgitParser extends App {
       }
     )
   }
-  val t1 = "abc"
-  val t2 = "abd"
   OParser.parse(parser1, args, Config()) match {
     case Some(config) =>
       config match {
