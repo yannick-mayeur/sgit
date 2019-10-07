@@ -31,4 +31,18 @@ object FileStatus {
     )
     getAllFiles(root).foreach(println)
   }
+
+  def getPathInRepositoryFor(file: File) {
+    Repository.getRepository(file.getPath) match {
+      case Some(repository) =>
+        val repositoryRootFolder =
+          Repository.getRepositoryRootFolder(repository)
+        val fileCanonincalPath = file.getCanonicalPath()
+        println(
+          fileCanonincalPath
+            .replaceFirst(repositoryRootFolder + File.separator, "")
+        )
+      case _ =>
+    }
+  }
 }
