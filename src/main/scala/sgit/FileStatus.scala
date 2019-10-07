@@ -5,7 +5,7 @@ import java.security.MessageDigest
 object FileStatus {
   def getHashFor(string: String) = {
     MessageDigest
-      .getInstance("SHA-256")
+      .getInstance("SHA-1")
       .digest(string.getBytes("UTF-8"))
       .map("%02x".format(_))
       .mkString
