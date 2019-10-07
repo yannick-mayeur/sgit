@@ -4,7 +4,7 @@ import java.io.File
 
 case class Config(
     command: String = "",
-    filename: String = "",
+    files: Seq[File] = Seq(),
     branch: String = "",
     commit: String = "",
     tag: String = ""
@@ -24,6 +24,15 @@ object SgitParser extends App {
       cmd("status")
         .text("Print status of repository")
         .action((_, c) => c.copy(command = "status")),
+      cmd("add")
+        .text("Add files to the stage area")
+        .action((_, c) => c.copy(command = "add"))
+        .children(
+          arg[File]("<file>...")
+            .unbounded()
+            .required()
+            .action((f, c) => c.copy(files = c.files :+ f))
+        ),
       cmd("test")
         .text("test")
         .action((_, c) => c.copy(command = "test")),
@@ -42,6 +51,8 @@ object SgitParser extends App {
           Repository.initRepository(System.getProperty("user.dir"))
         case Config("status", _, _, _, _) =>
           FileStatus.printStatus(new File("."))
+        case Config("add", files, _, _, _) =>
+          files.foreach(f => println(f.getCanonicalPath()))
         case Config("test", _, _, _, _) =>
           FileStatus
             .getAllFiles(new File(System.getProperty("user.dir")))
