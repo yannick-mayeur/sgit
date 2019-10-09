@@ -2,11 +2,27 @@ package sgit
 import scala.annotation.tailrec
 import sgit.fileIO.FileHelpers
 
-case class Repository(sgitFilePath: String)
+case class Repository private (sgitFilePath: String) {
+  val getRepositoryRootFolder = () => {
+    sgitFilePath
+      .split(FileHelpers.separator)
+      .dropRight(1)
+      .mkString(FileHelpers.separator)
+  }
+
+  def getPathInRepositoryFor(filePath: String): String = {
+    filePath.replaceFirst(s"$sgitFilePath${FileHelpers.separator}", "")
+  }
+
+  def isInRepository(path: String): Boolean = {
+    path.contains(sgitFilePath)
+  }
+
+}
 
 object Repository {
-  def initRepository(path: String): Unit = {
-    if (isInRepository(path)) {} else {
+  def initRepository(path: String): Option[Repository] = {
+    if (getRepository(path).isEmpty) {
       val hasMadeSgit = FileHelpers.createFolder(".sgit")
       val files = List("HEAD", "STAGE")
       val folders = List("tags", "trees", "blobs", "branches")
@@ -22,15 +38,9 @@ object Repository {
             FileHelpers.createFolder(s".sgit${FileHelpers.separator}$file")
         )
         .reduce(_ && _)
-    }
-  }
-
-  val createSgitPath = (path: String) => s"$path${FileHelpers.separator}.sgit"
-
-  def isInRepository(path: String): Boolean = {
-    getRepository(path) match {
-      case Some(_) => true
-      case _       => false
+      if (hasCreatedFiles && hasCreatedFolders) Some(Repository(path)) else None
+    } else {
+      None
     }
   }
 
@@ -38,26 +48,18 @@ object Repository {
     def loop(folders: List[String], currentPath: String): Option[Repository] = {
       folders match {
         case x :: xs =>
-          val newPath = currentPath + x
-          val sgitPath = s"${newPath}.sgit"
+          val newPath = s"$currentPath${FileHelpers.separator}$x"
+          val sgitPath = s"${newPath}${FileHelpers.separator}.sgit"
+          println(sgitPath)
           if (FileHelpers.exists(sgitPath)) {
-            Some(Repository(sgitPath))
+            Some(Repository(newPath))
           } else {
             loop(xs, newPath)
           }
         case _ => None
       }
     }
-
-    val folders = path.split(FileHelpers.separator).toList.map(_ + "/")
+    val folders = path.split(FileHelpers.separator).toList.drop(1)
     loop(folders, "")
-  }
-
-  val getRepositoryRootFolder = (repository: Repository) => {
-    val canonicalPathSgitFile = repository.sgitFilePath
-    canonicalPathSgitFile
-      .split(FileHelpers.separator)
-      .dropRight(1)
-      .mkString(FileHelpers.separator)
   }
 }
