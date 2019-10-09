@@ -1,10 +1,10 @@
 package sgit
 import scopt.OParser
-import java.io.File
+import scala.xml._
 
 case class Config(
     command: String = "",
-    files: Seq[File] = Seq(),
+    files: Seq[String] = Seq(),
     branch: String = "",
     commit: String = "",
     tag: String = ""
@@ -28,7 +28,7 @@ object SgitParser extends App {
         .text("Add files to the stage area")
         .action((_, c) => c.copy(command = "add"))
         .children(
-          arg[File]("<file>...")
+          arg[String]("<file>...")
             .unbounded()
             .required()
             .action((f, c) => c.copy(files = c.files :+ f))
@@ -44,20 +44,18 @@ object SgitParser extends App {
       }
     )
   }
+  val currentDirPath = System.getProperty("user.dir")
   OParser.parse(parser1, args, Config()) match {
     case Some(config) =>
       config match {
         case Config("init", _, _, _, _) =>
-          Repository.initRepository(System.getProperty("user.dir"))
+          Repository.initRepository(currentDirPath)
         case Config("status", _, _, _, _) =>
-          FileStatus.printStatus(new File("."))
+          FileStatus.printStatus(currentDirPath)
         case Config("add", files, _, _, _) =>
-          files.foreach(f => println(f.getCanonicalPath()))
+          files.foreach(f => println(f))
         case Config("test", _, _, _, _) =>
-          FileStatus
-            .getAllFiles(new File(System.getProperty("user.dir")))
-            .foreach(println(_))
-        case _ =>
+        case _                          =>
       }
     case _ =>
     // arguments are bad, error message is displayed

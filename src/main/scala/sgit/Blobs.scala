@@ -1,16 +1,11 @@
 package sgit
-import java.io.PrintWriter
+import scala.xml._
 
 case class Blob(
-    hash: String,
+    name: String,
     content: String
-)
-
-object Blob {
-  val writeBlob = (blob: Blob, repository: Repository) => {
-    val blobFile = new PrintWriter(
-      s"${repository.sgitFile.getCanonicalPath()}/blobs/${blob.hash}"
-    )
-    blobFile.write(blob.content)
-  }
+) {
+  val hash = FileStatus.getHashFor(content)
 }
+
+object Blob {}

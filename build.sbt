@@ -9,6 +9,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "sgit",
     libraryDependencies += scalaTest % Test,
+    libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.2.0",
     libraryDependencies += "com.github.scopt" %% "scopt" % "4.0.0-RC2"
   )
 

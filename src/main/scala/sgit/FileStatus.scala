@@ -1,6 +1,6 @@
 package sgit
-import java.io.File
 import java.security.MessageDigest
+import sgit.fileIO.FileHelpers
 
 object FileStatus {
   def getHashFor(string: String) = {
@@ -11,38 +11,30 @@ object FileStatus {
       .mkString
   }
 
-  def getAllFiles(root: File): Array[String] = {
-    root.listFiles().flatMap { file =>
-      if (file.getName() != ".sgit" && file.getName() != ".git") {
-        if (file.isDirectory()) getAllFiles(file)
-        else Array(file.getPath().drop(2))
-      } else {
-        Array[String]()
-      }
-    }
-  }
-
-  def printStatus(root: File) = {
+  def printStatus(rootPath: String) = {
     println("Changes to be committed:")
     println("Changes not staged for commit:")
     println("  (use \"sgit add <file>...\" to update what will be committed)")
     println(
       "untracked files:\n  (use \"sgit add <file>...\" to include in what will be committed)"
     )
-    getAllFiles(root).foreach(println)
+    val pathsOpt = FileHelpers.listDirectoryFiles(rootPath)
+    val relativePathsOpt = pathsOpt.map(
+      paths => paths.flatMap(path => getPathInRepositoryFor(path))
+    )
+    relativePathsOpt.map(_.foreach(println))
   }
 
-  def getPathInRepositoryFor(file: File) {
-    Repository.getRepository(file.getPath) match {
+  def getPathInRepositoryFor(filePath: String): Option[String] = {
+    Repository.getRepository(filePath) match {
       case Some(repository) =>
         val repositoryRootFolder =
           Repository.getRepositoryRootFolder(repository)
-        val fileCanonincalPath = file.getCanonicalPath()
-        println(
-          fileCanonincalPath
-            .replaceFirst(repositoryRootFolder + File.separator, "")
+        Some(
+          filePath
+            .replaceFirst(repositoryRootFolder + FileHelpers.separator, "")
         )
-      case _ =>
+      case _ => None
     }
   }
 }

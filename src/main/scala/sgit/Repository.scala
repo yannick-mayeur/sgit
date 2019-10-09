@@ -1,67 +1,63 @@
 package sgit
-import java.io.File
 import scala.annotation.tailrec
+import sgit.fileIO.FileHelpers
 
-case class Repository(sgitFile: File)
+case class Repository(sgitFilePath: String)
 
 object Repository {
   def initRepository(path: String): Unit = {
     if (isInRepository(path)) {} else {
-      val hasMadeSgit = new File(".sgit").mkdir()
+      val hasMadeSgit = FileHelpers.createFolder(".sgit")
       val files = List("HEAD", "STAGE")
       val folders = List("tags", "trees", "blobs", "branches")
       val hasCreatedFolders = files
-        .map((file) => new File(s".sgit${File.separator}$file").mkdir())
+        .map(
+          (file) =>
+            FileHelpers.createFile(s".sgit${FileHelpers.separator}$file")
+        )
         .reduce(_ && _)
       val hasCreatedFiles = folders
-        .map(file => new File(s".sgit${File.separator}$file").createNewFile())
+        .map(
+          file =>
+            FileHelpers.createFolder(s".sgit${FileHelpers.separator}$file")
+        )
         .reduce(_ && _)
     }
   }
 
-  val createSgitPath = (path: String) => s"$path${File.separator}.sgit"
+  val createSgitPath = (path: String) => s"$path${FileHelpers.separator}.sgit"
 
   def isInRepository(path: String): Boolean = {
-    @tailrec
-    def loop(currentPath: String): Boolean = {
-      val currentSgitFile = new File(createSgitPath(currentPath))
-      val currentFile = new File(currentPath)
-      if (currentFile.getParent() != null) {
-        currentSgitFile.exists() || loop(currentFile.getParent())
-      } else {
-        currentSgitFile.exists()
-      }
+    getRepository(path) match {
+      case Some(_) => true
+      case _       => false
     }
-    loop(path)
   }
 
   def getRepository(path: String) = {
-    @tailrec
-    def loop(currentPath: String): Option[Repository] = {
-      val currentSgitFile = new File(createSgitPath(currentPath))
-      val currentFile = new File(currentPath)
-      if (currentFile.getParent() != null) {
-        if (currentSgitFile.exists()) {
-          Some(Repository(currentSgitFile))
-        } else {
-          loop(currentFile.getParent())
-        }
-      } else {
-        if (currentSgitFile.exists()) {
-          Some(Repository(currentSgitFile))
-        } else {
-          None
-        }
+    def loop(folders: List[String], currentPath: String): Option[Repository] = {
+      folders match {
+        case x :: xs =>
+          val newPath = currentPath + x
+          val sgitPath = s"${newPath}.sgit"
+          if (FileHelpers.exists(sgitPath)) {
+            Some(Repository(sgitPath))
+          } else {
+            loop(xs, newPath)
+          }
+        case _ => None
       }
     }
-    loop(path)
+
+    val folders = path.split(FileHelpers.separator).toList.map(_ + "/")
+    loop(folders, "")
   }
 
   val getRepositoryRootFolder = (repository: Repository) => {
-    val canonicalPathSgitFile = repository.sgitFile.getCanonicalPath()
+    val canonicalPathSgitFile = repository.sgitFilePath
     canonicalPathSgitFile
-      .split(File.separator)
+      .split(FileHelpers.separator)
       .dropRight(1)
-      .mkString(File.separator)
+      .mkString(FileHelpers.separator)
   }
 }

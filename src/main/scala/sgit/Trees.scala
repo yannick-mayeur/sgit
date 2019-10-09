@@ -1,24 +1,41 @@
 package sgit
-import java.io.PrintWriter
+import sgit.fileIO.FileHelpers
 
 case class Tree(
-    hash: String,
+    name: String,
     trees: Seq[Tree],
     blobs: Seq[Blob]
-)
+) {
+  val hash = FileStatus.getHashFor(this.toString())
+  val toXml = () => {
+    <Tree>
+      <name>{name}</name>
+      <trees>
+        {trees.map(tree => <tree name={tree.name}>{tree.hash}</tree>)}
+      </trees>
+      <blobs>
+        {blobs.map(blob => <blob name={blob.name}>{blob.hash}</blob>)}
+      </blobs>
+    </Tree>
+  }
+}
 
 object Tree {
-  def writeTree(tree: Tree, repository: Repository): Unit = {
-    val treeFile = new PrintWriter(
-      s"${repository.sgitFile.getCanonicalPath()}/trees/${tree.hash}"
-    )
-    tree.trees.foreach { tree =>
-      treeFile.append(s"tree: $tree")
-      Tree.writeTree(tree, repository)
+  def fromXml(node: scala.xml.Node): Tree = {
+    val name = (node \ "name").text
+    println((node \ "trees" \ "tree").isEmpty)
+    val trees = (node \ "trees" \ "tree").flatMap { treeNode =>
+      FileHelpers
+        .getTree(treeNode.text)
+        .map(nextTreeNode => Tree.fromXml(nextTreeNode))
     }
-    tree.blobs.foreach { blob =>
-      treeFile.append(s"blob: $blob")
-      Blob.writeBlob(blob, repository)
+    val blobs = (node \ "blobs" \ "blob").flatMap { node =>
+      println(node.text)
+      FileHelpers
+        .getBlob(node.text)
+        .map(content => Blob(node \@ "name", content))
     }
+
+    Tree(name, trees, blobs)
   }
 }
