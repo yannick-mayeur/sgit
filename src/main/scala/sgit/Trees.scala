@@ -21,21 +21,29 @@ case class Tree(
 }
 
 object Tree {
-  def fromXml(node: scala.xml.Node): Tree = {
+  def fromXml(repository: Repository, node: scala.xml.Node): Tree = {
     val name = (node \ "name").text
-    println((node \ "trees" \ "tree").isEmpty)
     val trees = (node \ "trees" \ "tree").flatMap { treeNode =>
       FileHelpers
-        .getTree(treeNode.text)
-        .map(nextTreeNode => Tree.fromXml(nextTreeNode))
+        .getTree(repository, treeNode.text)
+        .map(nextTreeNode => Tree.fromXml(repository, nextTreeNode))
     }
-    val blobs = (node \ "blobs" \ "blob").flatMap { node =>
-      println(node.text)
-      FileHelpers
-        .getBlob(node.text)
-        .map(content => Blob(node \@ "name", content))
+    val blobs = (node \ "blobs" \ "blob").map { node =>
+      val content = FileHelpers.getBlob(repository, node.text)
+      Blob(node \@ "name", content)
     }
 
     Tree(name, trees, blobs)
+  }
+
+  def save(repository: Repository, tree: Tree) {
+    val treesPath = (repository: Repository, tree: Tree) =>
+      s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}trees${FileHelpers.separator}${tree.hash}"
+    FileHelpers.writeFile(
+      treesPath(repository, tree),
+      FileHelpers.formatXml(tree.toXml())
+    )
+    tree.trees.foreach(Tree.save(repository, _))
+    tree.blobs.foreach(Blob.save(repository, _))
   }
 }

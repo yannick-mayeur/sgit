@@ -6,10 +6,11 @@ import sgit.Repository
 import java.io.BufferedReader
 import java.io.FileReader
 import scala.io.Source
+import java.io.BufferedWriter
+import java.io.FileWriter
 
 object FileHelpers {
   val separator = File.separator
-  val repoOpt = Repository.getRepository(System.getProperty("user.dir"))
 
   def createFolder(path: String) = {
     new File(path).mkdir()
@@ -31,22 +32,44 @@ object FileHelpers {
       .reduce(_ || _)
   }
 
-  def getTree(hash: String): Option[scala.xml.Node] = {
-    repoOpt.map { repo =>
-      val file = new File(s"${repo.sgitFilePath}/trees/$hash")
-      scala.xml.XML.loadFile(file)
-    }
+  def formatXml(xml: scala.xml.Node) = {
+    (new scala.xml.PrettyPrinter(80, 4)).format(xml).toString
   }
 
-  def getBlob(hash: String): Option[String] = {
-    repoOpt.map { repo =>
-      val path = s"${repo.sgitFilePath}/blobs/$hash"
+  def getTree(repository: Repository, hash: String): scala.xml.Node = {
+    val file = new File(
+      s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}trees${FileHelpers.separator}$hash"
+    )
+    scala.xml.XML.loadFile(file)
+  }
+
+  def getContent(path: String) = {
+    if (new File(path).exists()) {
       var res = ""
       for (line <- Source.fromFile(path).getLines) {
         res += line
       }
-      res
+      Some(res)
+    } else {
+      None
     }
+  }
+
+  def writeFile(path: String, content: String): Unit = {
+    val file = new File(path)
+    val bw = new BufferedWriter(new FileWriter(file))
+    bw.write(content)
+    bw.close()
+  }
+
+  def getBlob(repository: Repository, hash: String): String = {
+    val path =
+      s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}blobs${FileHelpers.separator}$hash"
+    var res = ""
+    for (line <- Source.fromFile(path).getLines) {
+      res += line
+    }
+    res
   }
 
   def listDirectoryFiles(path: String): Option[Array[String]] = {

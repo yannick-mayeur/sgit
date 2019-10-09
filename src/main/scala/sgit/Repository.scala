@@ -18,6 +18,10 @@ case class Repository private (sgitFilePath: String) {
     path.contains(sgitFilePath)
   }
 
+  def getStage = () => {
+    Stage.loadStage(this)
+  }
+
 }
 
 object Repository {
@@ -50,7 +54,6 @@ object Repository {
         case x :: xs =>
           val newPath = s"$currentPath${FileHelpers.separator}$x"
           val sgitPath = s"${newPath}${FileHelpers.separator}.sgit"
-          println(sgitPath)
           if (FileHelpers.exists(sgitPath)) {
             Some(Repository(newPath))
           } else {

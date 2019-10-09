@@ -56,7 +56,11 @@ object SgitParser extends App {
             case _                => println("Not in a repository...")
           }
         case Config("add", files, _, _, _) =>
-          files.foreach(f => println(f))
+          Repository.getRepository(currentDirPath) match {
+            case Some(repository) =>
+              repository.getStage().addFiles(repository, files)
+            case _ => println("Not in a repository...")
+          }
         case Config("test", _, _, _, _) =>
         case _                          =>
       }
