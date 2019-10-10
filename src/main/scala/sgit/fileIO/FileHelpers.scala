@@ -12,6 +12,10 @@ import java.io.FileWriter
 object FileHelpers {
   val separator = File.separator
 
+  def getCanonical(currentDirPath: String, filePath: String) = {
+    new File(s"$currentDirPath$separator$filePath").getCanonicalPath()
+  }
+
   def createFolder(path: String) = {
     new File(path).mkdir()
   }
