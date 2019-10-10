@@ -53,6 +53,6 @@ class RepositrySpec extends FlatSpec with Matchers {
     val file = new File("foobarbaz")
     file.createNewFile()
     val path = repo.get.getPathInRepositoryFor(file.getCanonicalPath)
-    path shouldBe "foobarbaz"
+    path shouldBe "/foobarbaz"
   }
 }

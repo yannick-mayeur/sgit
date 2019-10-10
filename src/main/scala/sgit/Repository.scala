@@ -11,7 +11,7 @@ case class Repository private (sgitFilePath: String) {
   }
 
   def getPathInRepositoryFor(filePath: String): String = {
-    filePath.replaceFirst(s"$sgitFilePath${FileHelpers.separator}", "")
+    filePath.replaceFirst(s"$sgitFilePath", "")
   }
 
   def isInRepository(path: String): Boolean = {
