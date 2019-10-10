@@ -18,6 +18,25 @@ case class Tree(
       </blobs>
     </Tree>
   }
+
+  def merge(newTree: Tree): Tree = newTree match {
+    case Tree(name2, trees2, blobs2) if name == name2 =>
+      val groupedTrees2 = trees2.groupBy(_.name)
+      val newTrees = trees.filterNot { tree =>
+        trees2.map(_.name).contains(tree.name)
+      } ++ trees2.filterNot { tree2 =>
+        trees.map(_.name).contains(tree2.name)
+      } ++ trees
+        .filter { tree =>
+          trees2.map(_.name).contains(tree.name)
+        }
+        .flatMap(t => groupedTrees2(t.name).map(t.merge))
+      val newBlobs = blobs.filterNot { blob =>
+        blobs2.map(_.name).contains(blob.name)
+      } ++ blobs2
+      Tree(name, newTrees, newBlobs)
+    case _ => this
+  }
 }
 
 object Tree {
