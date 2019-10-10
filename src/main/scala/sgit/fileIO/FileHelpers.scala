@@ -76,7 +76,7 @@ object FileHelpers {
     res
   }
 
-  def listDirectoryFiles(path: String): Option[Array[String]] = {
+  def listDirectoryFiles(path: String): Array[String] = {
     def loop(root: File): Array[String] = {
       root.listFiles().flatMap { file =>
         if (file.getName() != ".sgit" && file.getName() != ".git") {
@@ -88,6 +88,6 @@ object FileHelpers {
       }
     }
     val root = new File(path)
-    if (root.isDirectory()) Some(loop(root)) else None
+    if (root.isDirectory()) loop(root) else Array(path)
   }
 }

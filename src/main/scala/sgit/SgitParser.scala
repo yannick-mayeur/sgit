@@ -1,6 +1,7 @@
 package sgit
 import scopt.OParser
 import scala.xml._
+import sgit.fileIO.FileHelpers
 
 case class Config(
     command: String = "",
@@ -58,10 +59,17 @@ object SgitParser extends App {
         case Config("add", files, _, _, _) =>
           Repository.getRepository(currentDirPath) match {
             case Some(repository) =>
-              repository.getStage().addFiles(repository, files)
+              repository
+                .getStage()
+                .addFiles(
+                  repository,
+                  files
+                    .map(file => FileHelpers.getCanonical(currentDirPath, file))
+                    .flatMap(file => FileHelpers.listDirectoryFiles(file))
+                )
             case _ => println("Not in a repository...")
           }
-        case Config("test", _, _, _, _) =>
+        case Config("test", _, _, _, _) => ???
         case _                          =>
       }
     case _ =>

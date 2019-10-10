@@ -19,11 +19,10 @@ object FileStatus {
     println(
       "untracked files:\n  (use \"sgit add <file>...\" to include in what will be committed)"
     )
-    val pathsOpt = FileHelpers.listDirectoryFiles(repository.sgitFilePath)
-    val relativePathsOpt = pathsOpt.map(
-      paths => paths.map(path => repository.getPathInRepositoryFor(path))
-    )
-    relativePathsOpt.map(_.foreach(println))
+    val paths = FileHelpers.listDirectoryFiles(repository.sgitFilePath)
+    val relativePaths =
+      paths.map(path => repository.getPathInRepositoryFor(path))
+    relativePaths.foreach(println)
   }
 
 }
