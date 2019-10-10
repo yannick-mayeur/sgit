@@ -40,7 +40,7 @@ object Diff {
         println(s" ${l1(i)}")
       } else if (j > 0 && (i == 0 || matrix(i)(j - 1) >= matrix(i - 1)(j))) {
         printDiff(matrix, l1, l2, i, j - 1)
-        println(s"+ ${l2(i)}")
+        println(s"+ ${l2(j)}")
       } else if (i > 0 && (j == 0 || matrix(i)(j - 1) >= matrix(i - 1)(j))) {
         printDiff(matrix, l1, l2, i - 1, j)
         println(s"- ${l1(i)}")
