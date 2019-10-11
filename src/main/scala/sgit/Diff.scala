@@ -2,15 +2,17 @@ package sgit
 import scala.annotation.tailrec
 import scala.collection.mutable
 
+case class Diff[T](changes: Seq[(String, T)])
+
 object Diff {
-  def diffBetweenTexts(text1: String, text2: String) = {
+  def getDiffBetweenElements[T](elem1: Seq[T], elem2: Seq[T]) = {
 
     @tailrec
     def lcsLength[T](
-        l1: List[T],
-        l2: List[T],
-        res: List[List[Int]]
-    ): List[List[Int]] = {
+        l1: Seq[T],
+        l2: Seq[T],
+        res: Seq[Seq[Int]]
+    ): Seq[Seq[Int]] = {
       val index1 = res.size - 1
       if (l1.size <= index1) {
         res
@@ -24,37 +26,58 @@ object Diff {
               Math.max(previous, res(index1)(index2 + 1))
             }
         }
-        lcsLength(l1, l2, res ++ List(newLine))
+        lcsLength(l1, l2, res ++ Seq(newLine))
       }
     }
 
+    @tailrec
     def printDiff[T](
-        matrix: List[List[Int]],
-        l1: List[T],
-        l2: List[T],
+        matrix: Seq[Seq[Int]],
+        l1: Seq[T],
+        l2: Seq[T],
         i: Int,
-        j: Int
-    ): Unit = {
+        j: Int,
+        diff: Diff[T]
+    ): Diff[T] = {
       if (i > 0 && j > 0 && l1(i - 1) == l2(j - 1)) {
-        printDiff(matrix, l1, l2, i - 1, j - 1)
-        println(s" ${l1(i - 1)}")
+        printDiff(
+          matrix,
+          l1,
+          l2,
+          i - 1,
+          j - 1,
+          diff.copy(changes = diff.changes :+ ("  ", l1(i - 1)))
+        )
       } else if (j > 0 && (i == 0 || matrix(i)(j - 1) >= matrix(i - 1)(j))) {
-        printDiff(matrix, l1, l2, i, j - 1)
-        println(s"+ ${l2(j - 1)}")
+        printDiff(
+          matrix,
+          l1,
+          l2,
+          i,
+          j - 1,
+          diff.copy(changes = diff.changes :+ ("> ", l2(i - 1)))
+        )
       } else if (i > 0 && (j == 0 || matrix(i)(j - 1) < matrix(i - 1)(j))) {
-        printDiff(matrix, l1, l2, i - 1, j)
-        println(s"- ${l1(i - 1)}")
+        printDiff(
+          matrix,
+          l1,
+          l2,
+          i - 1,
+          j,
+          diff.copy(changes = diff.changes :+ ("< ", l1(i - 1)))
+        )
+      } else {
+        diff.copy(changes = diff.changes.reverse)
       }
     }
 
-    val lines1 = text1.toList
-    val lines2 = text2.toList
     printDiff(
-      lcsLength(lines1, lines2, List.fill(1, lines2.size + 1)(0)),
-      lines1,
-      lines2,
-      lines1.size,
-      lines2.size
+      lcsLength(elem1, elem2, Seq.fill(1, elem2.size + 1)(0)),
+      elem1,
+      elem2,
+      elem1.size,
+      elem2.size,
+      Diff(Seq())
     )
   }
 }
