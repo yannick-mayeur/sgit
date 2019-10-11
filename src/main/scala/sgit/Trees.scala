@@ -19,6 +19,22 @@ case class Tree(
     </Tree>
   }
 
+  def getBlobContentAt(path: String): Option[String] = {
+    path.split(FileHelpers.separator).toList match {
+      case x1 :: x2 :: xs if x1 == name =>
+        trees
+          .filter(_.name == x2)
+          .headOption
+          .flatMap(_.getBlobContentAt(xs.mkString(FileHelpers.separator)))
+      case x :: Nil =>
+        blobs
+          .filter(_.name.split(FileHelpers.separator).lastOption.contains(x))
+          .map(_.content)
+          .headOption
+      case x => None
+    }
+  }
+
   def merge(newTree: Tree): Tree = newTree match {
     case Tree(name2, trees2, blobs2) if name == name2 =>
       val groupedTrees2 = trees2.groupBy(_.name)
