@@ -2,9 +2,13 @@ package sgit
 
 import org.scalatest._
 import java.io.File
+import scala.language.postfixOps
+import sgit.fileIO.FileHelpers
 
 class RepositrySpec extends FlatSpec with Matchers {
+  var currentDirPath: String = ""
   override def withFixture(test: NoArgTest) = {
+    currentDirPath = System.getProperty("user.dir")
     // Shared setup (run at beginning of each test)
     try test()
     finally {
@@ -23,7 +27,8 @@ class RepositrySpec extends FlatSpec with Matchers {
   }
 
   "Repository" should "create the .sgit structure" in {
-    Repository.initRepository(".")
+    val repo = Repository.initRepository(currentDirPath)
+    assert(repo nonEmpty)
     assert(new File(".sgit").exists())
     assert(new File(s".sgit${File.separator}HEAD").exists())
     assert(new File(s".sgit${File.separator}STAGE").exists())
@@ -34,12 +39,20 @@ class RepositrySpec extends FlatSpec with Matchers {
   }
 
   it should "check if .sgit exists in same directory" in {
-    Repository.initRepository(".")
-    assert(Repository.isInRepository("."))
+    Repository.initRepository(currentDirPath)
+    assert(Repository.getRepository(currentDirPath).nonEmpty)
   }
 
   it should "check if .sgit exists in parent directory" in {
-    Repository.initRepository("..")
-    assert(Repository.isInRepository("."))
+    Repository.initRepository(currentDirPath + FileHelpers.separator + "..")
+    assert(Repository.getRepository(currentDirPath).nonEmpty)
+  }
+
+  it should "give path in repo for file" in {
+    val repo = Repository.initRepository(currentDirPath)
+    val file = new File("foobarbaz")
+    file.createNewFile()
+    val path = repo.get.getPathInRepositoryFor(file.getCanonicalPath)
+    path shouldBe "/foobarbaz"
   }
 }

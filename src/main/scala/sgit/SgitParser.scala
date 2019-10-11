@@ -1,10 +1,11 @@
 package sgit
 import scopt.OParser
-import java.io.File
+import scala.xml._
+import sgit.fileIO.FileHelpers
 
 case class Config(
     command: String = "",
-    filename: String = "",
+    files: Seq[String] = Seq(),
     branch: String = "",
     commit: String = "",
     tag: String = ""
@@ -24,6 +25,15 @@ object SgitParser extends App {
       cmd("status")
         .text("Print status of repository")
         .action((_, c) => c.copy(command = "status")),
+      cmd("add")
+        .text("Add files to the stage area")
+        .action((_, c) => c.copy(command = "add"))
+        .children(
+          arg[String]("<file>...")
+            .unbounded()
+            .required()
+            .action((f, c) => c.copy(files = c.files :+ f))
+        ),
       cmd("test")
         .text("test")
         .action((_, c) => c.copy(command = "test")),
@@ -35,20 +45,32 @@ object SgitParser extends App {
       }
     )
   }
-  val t1 = "abc"
-  val t2 = "abd"
+  val currentDirPath = System.getProperty("user.dir")
   OParser.parse(parser1, args, Config()) match {
     case Some(config) =>
       config match {
         case Config("init", _, _, _, _) =>
-          Repository.initRepository(System.getProperty("user.dir"))
+          Repository.initRepository(currentDirPath)
         case Config("status", _, _, _, _) =>
-          FileStatus.printStatus(new File("."))
-        case Config("test", _, _, _, _) =>
-          FileStatus
-            .getAllFiles(new File(System.getProperty("user.dir")))
-            .foreach(println(_))
-        case _ =>
+          Repository.getRepository(currentDirPath) match {
+            case Some(repository) => FileStatus.printStatus(repository)
+            case _                => println("Not in a repository...")
+          }
+        case Config("add", files, _, _, _) =>
+          Repository.getRepository(currentDirPath) match {
+            case Some(repository) =>
+              repository
+                .getStage()
+                .addFiles(
+                  repository,
+                  files
+                    .map(file => FileHelpers.getCanonical(currentDirPath, file))
+                    .flatMap(file => FileHelpers.listDirectoryFiles(file))
+                )
+            case _ => println("Not in a repository...")
+          }
+        case Config("test", _, _, _, _) => ???
+        case _                          =>
       }
     case _ =>
     // arguments are bad, error message is displayed

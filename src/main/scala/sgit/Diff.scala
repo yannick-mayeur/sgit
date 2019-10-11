@@ -35,15 +35,15 @@ object Diff {
         i: Int,
         j: Int
     ): Unit = {
-      if (i > 0 && j > 0 && l1(i) == l2(j)) {
+      if (i > 0 && j > 0 && l1(i - 1) == l2(j - 1)) {
         printDiff(matrix, l1, l2, i - 1, j - 1)
-        println(s" ${l1(i)}")
+        println(s" ${l1(i - 1)}")
       } else if (j > 0 && (i == 0 || matrix(i)(j - 1) >= matrix(i - 1)(j))) {
         printDiff(matrix, l1, l2, i, j - 1)
-        println(s"+ ${l2(i)}")
-      } else if (i > 0 && (j == 0 || matrix(i)(j - 1) >= matrix(i - 1)(j))) {
+        println(s"+ ${l2(j - 1)}")
+      } else if (i > 0 && (j == 0 || matrix(i)(j - 1) < matrix(i - 1)(j))) {
         printDiff(matrix, l1, l2, i - 1, j)
-        println(s"- ${l1(i)}")
+        println(s"- ${l1(i - 1)}")
       }
     }
 
@@ -53,8 +53,8 @@ object Diff {
       lcsLength(lines1, lines2, List.fill(1, lines2.size + 1)(0)),
       lines1,
       lines2,
-      lines1.size - 1,
-      lines2.size - 1
+      lines1.size,
+      lines2.size
     )
   }
 }
