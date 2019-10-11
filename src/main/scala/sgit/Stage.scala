@@ -7,7 +7,7 @@ case class Stage private (treeOpt: Option[Tree]) {
   def addFiles(repository: Repository, canonicalPaths: Seq[String]) = {
     val treeReducer = (treeOpt1: Option[Tree], treeOpt2: Option[Tree]) => {
       (treeOpt1, treeOpt2) match {
-        case (Some(tree1), Some(tree2)) => Some(tree1.merge(tree2))
+        case (Some(tree1), Some(tree2)) => Some(tree2.merge(tree1))
         case (None, Some(tree2))        => Some(tree2)
         case (Some(tree1), None)        => Some(tree1)
         case _                          => None
@@ -49,6 +49,19 @@ case class Stage private (treeOpt: Option[Tree]) {
       case _ => this
     }
   }
+
+  def getStagedFiles() = treeOpt match {
+    case Some(tree) =>
+      Some(tree.blobs.map(_.name))
+    case _ => None
+  }
+
+  def getContentFor(path: String) = treeOpt match {
+    case Some(tree) =>
+      tree.getBlobContentAt(path)
+    case _ => None
+  }
+
 }
 
 object Stage {

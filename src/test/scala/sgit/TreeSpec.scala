@@ -31,7 +31,7 @@ class TreeSpec extends FlatSpec with Matchers {
           Tree(
             "test",
             Seq(Tree("mitre", Seq(), Seq())),
-            Seq(Blob("baz", "foobar"))
+            Seq(Blob("foo", "newbar"), Blob("baz", "foobar"))
           )
         ),
         Seq()
@@ -44,7 +44,7 @@ class TreeSpec extends FlatSpec with Matchers {
           Tree(
             "test",
             Seq(Tree("mitre", Seq(), Seq())),
-            Seq(Blob("foo", "bar"), Blob("baz", "foobar"))
+            Seq(Blob("foo", "newbar"), Blob("baz", "foobar"))
           )
         ),
         Seq()

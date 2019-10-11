@@ -8,6 +8,7 @@ import java.io.FileReader
 import scala.io.Source
 import java.io.BufferedWriter
 import java.io.FileWriter
+import scala.collection.mutable
 
 object FileHelpers {
   val separator = File.separator
@@ -49,11 +50,11 @@ object FileHelpers {
 
   def getContent(path: String) = {
     if (new File(path).exists()) {
-      var res = ""
+      var res = mutable.ListBuffer[String]()
       for (line <- Source.fromFile(path).getLines) {
-        res += line
+        res.append(line)
       }
-      Some(res)
+      Some(res.mkString("\n"))
     } else {
       None
     }
@@ -69,11 +70,11 @@ object FileHelpers {
   def getBlob(repository: Repository, hash: String): String = {
     val path =
       s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}blobs${FileHelpers.separator}$hash"
-    var res = ""
+    var res = mutable.ListBuffer[String]()
     for (line <- Source.fromFile(path).getLines) {
       res += line
     }
-    res
+    res.mkString("\n")
   }
 
   def listDirectoryFiles(path: String): Array[String] = {
