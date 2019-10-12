@@ -7,7 +7,7 @@ case class Tree(
     blobs: Seq[Blob]
 ) {
   val hash = FileStatus.getHashFor(this.toString())
-  val toXml = () => {
+  def toXml() = {
     <Tree>
       <name>{name}</name>
       <trees>
@@ -19,8 +19,24 @@ case class Tree(
     </Tree>
   }
 
+  def save(repository: Repository) {
+    val treesPath = (repository: Repository, tree: Tree) =>
+      s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}trees${FileHelpers.separator}${tree.hash}"
+    FileHelpers.writeFile(
+      treesPath(repository, this),
+      FileHelpers.formatXml(this.toXml())
+    )
+    trees.foreach(_.save(repository))
+    blobs.foreach(Blob.save(repository, _))
+  }
+
   def getBlobContentAt(path: String): Option[String] = {
     path.split(FileHelpers.separator).toList match {
+      case x1 :: x2 :: Nil if x1 == name =>
+        blobs
+          .filter(_.name.split(FileHelpers.separator).lastOption.contains(x2))
+          .map(_.content)
+          .headOption
       case x1 :: x2 :: xs if x1 == name =>
         trees
           .filter(_.name == x2)
@@ -53,6 +69,10 @@ case class Tree(
       Tree(name, newTrees, newBlobs)
     case _ => this
   }
+
+  def getAllBlobs(): Seq[Blob] = {
+    trees.flatMap(_.getAllBlobs()) ++ blobs
+  }
 }
 
 object Tree {
@@ -63,22 +83,12 @@ object Tree {
         .getTree(repository, treeNode.text)
         .map(nextTreeNode => Tree.fromXml(repository, nextTreeNode))
     }
-    val blobs = (node \ "blobs" \ "blob").map { node =>
-      val content = FileHelpers.getBlob(repository, node.text)
-      Blob(node \@ "name", content)
+    val blobs = (node \ "blobs" \ "blob").flatMap { node =>
+      FileHelpers
+        .getBlob(repository, node.text)
+        .map(content => Blob(node \@ "name", content))
     }
 
     Tree(name, trees, blobs)
-  }
-
-  def save(repository: Repository, tree: Tree) {
-    val treesPath = (repository: Repository, tree: Tree) =>
-      s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}trees${FileHelpers.separator}${tree.hash}"
-    FileHelpers.writeFile(
-      treesPath(repository, tree),
-      FileHelpers.formatXml(tree.toXml())
-    )
-    tree.trees.foreach(Tree.save(repository, _))
-    tree.blobs.foreach(Blob.save(repository, _))
   }
 }

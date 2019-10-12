@@ -2,6 +2,7 @@ package sgit
 import scopt.OParser
 import scala.xml._
 import sgit.fileIO.FileHelpers
+import java.{util => ju}
 
 case class Config(
     command: String = "",
@@ -33,6 +34,16 @@ object SgitParser extends App {
             .unbounded()
             .required()
             .action((f, c) => c.copy(files = c.files :+ f))
+        ),
+      cmd("commit")
+        .text("Commit staged changes")
+        .action((_, c) => c.copy(command = "commit"))
+        .children(
+          opt[String]('m', "message")
+            .required()
+            .valueName("<message>")
+            .action((x, c) => c.copy(commit = x))
+            .text("A message is required to commit")
         ),
       cmd("test")
         .text("test")
@@ -67,6 +78,24 @@ object SgitParser extends App {
                     .map(file => FileHelpers.getCanonical(currentDirPath, file))
                     .flatMap(file => FileHelpers.listDirectoryFiles(file))
                 )
+            case _ => println("Not in a repository...")
+          }
+        case Config("commit", _, _, _, _) =>
+          Repository.getRepository(currentDirPath) match {
+            case Some(repository) =>
+              repository
+                .getStage()
+                .treeOpt
+                .map(
+                  tree =>
+                    Commit(
+                      tree,
+                      ju.Calendar.getInstance().getTime().toString(),
+                      config.commit,
+                      repository.getHead()
+                    )
+                )
+                .map(_.save(repository))
             case _ => println("Not in a repository...")
           }
         case Config("test", _, _, _, _) => ???
