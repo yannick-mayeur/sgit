@@ -26,6 +26,9 @@ object SgitParser extends App {
       cmd("status")
         .text("Print status of repository")
         .action((_, c) => c.copy(command = "status")),
+      cmd("log")
+        .text("Log commit history")
+        .action((_, c) => c.copy(command = "log")),
       cmd("add")
         .text("Add files to the stage area")
         .action((_, c) => c.copy(command = "add"))
@@ -96,6 +99,13 @@ object SgitParser extends App {
                     )
                 )
                 .map(_.save(repository))
+            case _ => println("Not in a repository...")
+          }
+        case Config("log", _, _, _, _) =>
+          Repository.getRepository(currentDirPath) match {
+            case Some(repository) =>
+              val log = repository.getLog()
+              println(log)
             case _ => println("Not in a repository...")
           }
         case Config("test", _, _, _, _) => ???
