@@ -44,17 +44,13 @@ case class Stage private (treeOpt: Option[Tree]) {
           s"${repository.sgitFilePath}$stagePath",
           newTree.hash
         )
-        Tree.save(repository, newTree)
+        newTree.save(repository)
         this.copy(Some(newTree))
       case _ => this
     }
   }
 
-  def getStagedFiles() = treeOpt match {
-    case Some(tree) =>
-      Some(tree.blobs.map(_.name))
-    case _ => None
-  }
+  def getStagedFiles() = treeOpt.map(_.getAllBlobs()).map(_.map(_.name))
 
   def getContentFor(path: String) = treeOpt match {
     case Some(tree) =>
@@ -68,13 +64,11 @@ object Stage {
   def loadStage(repository: Repository) = {
     val stagePath =
       s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}STAGE"
-    FileHelpers.getContent(stagePath) match {
-      case Some(hash) if hash.trim.nonEmpty =>
-        val tree =
-          Tree.fromXml(repository, FileHelpers.getTree(repository, hash))
-        Stage(Some(tree))
-      case _ =>
-        Stage(None)
-    }
+    Stage(
+      FileHelpers
+        .getContent(stagePath)
+        .flatMap(FileHelpers.getTree(repository, _))
+        .map(Tree.fromXml(repository, _))
+    )
   }
 }

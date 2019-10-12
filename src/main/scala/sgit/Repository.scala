@@ -18,10 +18,18 @@ case class Repository private (sgitFilePath: String) {
     path.contains(sgitFilePath)
   }
 
-  def getStage = () => {
+  def getStage() = {
     Stage.loadStage(this)
   }
 
+  def getHead(): Option[Commit] = {
+    FileHelpers
+      .getContent(
+        s"$sgitFilePath${FileHelpers.separator}.sgit${FileHelpers.separator}HEAD"
+      )
+      .flatMap(FileHelpers.getCommit(this, _))
+      .flatMap(Commit.fromXml(this, _))
+  }
 }
 
 object Repository {
@@ -29,7 +37,7 @@ object Repository {
     if (getRepository(path).isEmpty) {
       val hasMadeSgit = FileHelpers.createFolder(".sgit")
       val files = List("HEAD", "STAGE")
-      val folders = List("tags", "trees", "blobs", "branches")
+      val folders = List("tags", "trees", "blobs", "branches", "commits")
       val hasCreatedFolders = files
         .map(
           (file) =>

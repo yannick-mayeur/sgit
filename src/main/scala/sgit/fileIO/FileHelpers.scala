@@ -9,6 +9,7 @@ import scala.io.Source
 import java.io.BufferedWriter
 import java.io.FileWriter
 import scala.collection.mutable
+import scala.util.Try
 
 object FileHelpers {
   val separator = File.separator
@@ -41,11 +42,23 @@ object FileHelpers {
     (new scala.xml.PrettyPrinter(80, 4)).format(xml).toString
   }
 
-  def getTree(repository: Repository, hash: String): scala.xml.Node = {
+  def getTree(repository: Repository, hash: String): Option[scala.xml.Node] = {
     val file = new File(
       s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}trees${FileHelpers.separator}$hash"
     )
-    scala.xml.XML.loadFile(file)
+    if (file.exists() && file.isFile()) Some(scala.xml.XML.loadFile(file))
+    else None
+  }
+
+  def getCommit(
+      repository: Repository,
+      hash: String
+  ): Option[scala.xml.Node] = {
+    val file = new File(
+      s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}commits${FileHelpers.separator}$hash"
+    )
+    if (file.exists() && file.isFile()) Some(scala.xml.XML.loadFile(file))
+    else None
   }
 
   def getContent(path: String) = {
@@ -67,14 +80,16 @@ object FileHelpers {
     bw.close()
   }
 
-  def getBlob(repository: Repository, hash: String): String = {
+  def getBlob(repository: Repository, hash: String): Option[String] = {
     val path =
       s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}blobs${FileHelpers.separator}$hash"
     var res = mutable.ListBuffer[String]()
-    for (line <- Source.fromFile(path).getLines) {
-      res += line
-    }
-    res.mkString("\n")
+    Try {
+      for (line <- Source.fromFile(path).getLines) {
+        res += line
+      }
+      res.mkString("\n")
+    }.toOption
   }
 
   def listDirectoryFiles(path: String): Array[String] = {
