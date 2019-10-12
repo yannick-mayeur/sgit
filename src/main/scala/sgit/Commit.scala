@@ -7,7 +7,7 @@ case class Commit(
     message: String,
     previous: Option[Commit]
 ) {
-  val hash = FileStatus.getHashFor(this.toString())
+  val hash = FileStatus.getHashFor(this.toString)
 
   def toXml() = {
     <Commit>
@@ -21,6 +21,14 @@ case class Commit(
       }
     }
     </Commit>
+  }
+
+  def getLog(): String = {
+    s"""
+    commit $hash
+    date: $timestamp
+    message: $message
+    ${previous.map(commit => s"\n${commit.getLog()}").getOrElse("")}"""
   }
 
   def save(repository: Repository) = {
@@ -54,9 +62,4 @@ object Commit {
       .map(Tree.fromXml(repository, _))
       .map(Commit(_, timestamp, message, previous))
   }
-
-  // def load(repository: Repository, hash: String): Commit = {
-
-  // }
-
 }

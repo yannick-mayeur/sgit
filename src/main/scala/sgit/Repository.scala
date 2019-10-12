@@ -30,6 +30,14 @@ case class Repository private (sgitFilePath: String) {
       .flatMap(FileHelpers.getCommit(this, _))
       .flatMap(Commit.fromXml(this, _))
   }
+
+  def getLog() = {
+    getHead()
+      .map { commit =>
+        commit.getLog()
+      }
+      .getOrElse("")
+  }
 }
 
 object Repository {
