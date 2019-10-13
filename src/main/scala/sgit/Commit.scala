@@ -46,6 +46,8 @@ case class Commit(
   }
 
   def getContentFor(path: String) = rootTree.getBlobContentAt(path)
+
+  def loadAllFiles() = rootTree.getAllBlobs().map(_.load())
 }
 
 object Commit {
