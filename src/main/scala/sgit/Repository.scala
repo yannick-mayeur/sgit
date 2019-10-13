@@ -38,6 +38,29 @@ case class Repository private (sgitFilePath: String) {
       }
       .getOrElse("")
   }
+
+  def cleanWorkingDirectory(): Option[Repository] = {
+    Diff.isDiffWithWorkingDirecory(this) match {
+      case false =>
+        getStage()
+          .getStagedFiles()
+          .map(_.map { path =>
+            println(path)
+            FileHelpers.deleteFile(path.drop(1))
+          })
+        Some(this)
+      case true =>
+        None
+    }
+  }
+
+  def fillWith(ref: String): Option[Repository] = {
+    FileHelpers
+      .getCommit(this, ref)
+      .flatMap(xml => Commit.fromXml(this, xml))
+      .map(commit => commit.loadAllFiles())
+    None
+  }
 }
 
 object Repository {

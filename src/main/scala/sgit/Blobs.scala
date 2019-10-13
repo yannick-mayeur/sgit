@@ -7,6 +7,10 @@ case class Blob(
     content: String
 ) {
   val hash = FileStatus.getHashFor(content)
+
+  def load() = {
+    FileHelpers.writeFile(name.drop(1), content)
+  }
 }
 
 object Blob {

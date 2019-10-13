@@ -26,6 +26,8 @@ object FileHelpers {
     new File(path).createNewFile()
   }
 
+  def deleteFile(path: String) = new File(path).delete()
+
   def exists(path: String) = {
     new File(path).exists()
   }

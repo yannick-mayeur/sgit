@@ -7,9 +7,8 @@ import java.{util => ju}
 case class Config(
     command: String = "",
     files: Seq[String] = Seq(),
-    branch: String = "",
-    commit: String = "",
-    tag: String = ""
+    ref: String = "",
+    commit: String = ""
 )
 
 object SgitParser extends App {
@@ -29,6 +28,14 @@ object SgitParser extends App {
       cmd("log")
         .text("Log commit history")
         .action((_, c) => c.copy(command = "log")),
+      cmd("checkout")
+        .text("Checkout a particular commit, branch or tag")
+        .action((_, c) => c.copy(command = "checkout"))
+        .children(
+          arg[String]("<ref>")
+            .required()
+            .action((r, c) => c.copy(ref = r))
+        ),
       cmd("add")
         .text("Add files to the stage area")
         .action((_, c) => c.copy(command = "add"))
@@ -53,8 +60,8 @@ object SgitParser extends App {
         .action((_, c) => c.copy(command = "test")),
       checkConfig { c =>
         c match {
-          case Config("", _, _, _, _) => failure("No command given")
-          case _                      => success
+          case Config("", _, _, _) => failure("No command given")
+          case _                   => success
         }
       }
     )
@@ -63,14 +70,14 @@ object SgitParser extends App {
   OParser.parse(parser1, args, Config()) match {
     case Some(config) =>
       config match {
-        case Config("init", _, _, _, _) =>
+        case Config("init", _, _, _) =>
           Repository.initRepository(currentDirPath)
-        case Config("status", _, _, _, _) =>
+        case Config("status", _, _, _) =>
           Repository.getRepository(currentDirPath) match {
             case Some(repository) => FileStatus.printStatus(repository)
             case _                => println("Not in a repository...")
           }
-        case Config("add", files, _, _, _) =>
+        case Config("add", files, _, _) =>
           Repository.getRepository(currentDirPath) match {
             case Some(repository) =>
               repository
@@ -83,7 +90,17 @@ object SgitParser extends App {
                 )
             case _ => println("Not in a repository...")
           }
-        case Config("commit", _, _, _, _) =>
+        case Config("checkout", _, _, _) =>
+          Repository.getRepository(currentDirPath) match {
+            case Some(repository) =>
+              repository
+                .cleanWorkingDirectory()
+                .map(_.fillWith(config.ref))
+              // TODO
+              println(config.ref)
+            case _ => println("Not in a repository...")
+          }
+        case Config("commit", _, _, _) =>
           Repository.getRepository(currentDirPath) match {
             case Some(repository) =>
               repository
@@ -101,15 +118,15 @@ object SgitParser extends App {
                 .map(_.save(repository))
             case _ => println("Not in a repository...")
           }
-        case Config("log", _, _, _, _) =>
+        case Config("log", _, _, _) =>
           Repository.getRepository(currentDirPath) match {
             case Some(repository) =>
               val log = repository.getLog()
               println(log)
             case _ => println("Not in a repository...")
           }
-        case Config("test", _, _, _, _) => ???
-        case _                          =>
+        case Config("test", _, _, _) => ???
+        case _                       =>
       }
     case _ =>
     // arguments are bad, error message is displayed
