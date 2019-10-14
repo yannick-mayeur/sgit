@@ -38,10 +38,7 @@ case class Commit(
       commitPath(repository),
       FileHelpers.formatXml(this.toXml())
     )
-    FileHelpers.writeFile(
-      s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}HEAD",
-      hash
-    )
+    repository.updateHead(hash)
     rootTree.save(repository)
   }
 

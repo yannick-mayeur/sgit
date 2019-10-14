@@ -28,6 +28,14 @@ object SgitParser extends App {
       cmd("log")
         .text("Log commit history")
         .action((_, c) => c.copy(command = "log")),
+      cmd("branch")
+        .text("Create a new branch")
+        .action((_, c) => c.copy(command = "branch"))
+        .children(
+          arg[String]("<name>")
+            .required()
+            .action((b, c) => c.copy(ref = b))
+        ),
       cmd("checkout")
         .text("Checkout a particular commit, branch or tag")
         .action((_, c) => c.copy(command = "checkout"))
@@ -96,8 +104,6 @@ object SgitParser extends App {
               repository
                 .cleanWorkingDirectory()
                 .map(_.fillWith(config.ref))
-              // TODO
-              println(config.ref)
             case _ => println("Not in a repository...")
           }
         case Config("commit", _, _, _) =>
@@ -123,6 +129,19 @@ object SgitParser extends App {
             case Some(repository) =>
               val log = repository.getLog()
               println(log)
+            case _ => println("Not in a repository...")
+          }
+        case Config("branch", _, _, _) =>
+          Repository.getRepository(currentDirPath) match {
+            case Some(repository) =>
+              repository
+                .getHead()
+                .map { commit =>
+                  FileHelpers.writeFile(
+                    s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}branches${FileHelpers.separator}${config.ref}",
+                    commit.hash
+                  )
+                }
             case _ => println("Not in a repository...")
           }
         case Config("test", _, _, _) => ???
