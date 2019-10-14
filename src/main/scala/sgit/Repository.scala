@@ -76,7 +76,13 @@ case class Repository private (sgitFilePath: String) {
       }
     commit
       .flatMap(commit => Commit.fromXml(this, commit._2))
-      .map(commit => commit.loadAllFiles())
+      .foreach { commit =>
+        commit.loadAllFiles()
+        FileHelpers.writeFile(
+          s"${sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}STAGE",
+          commit.hash
+        )
+      }
     commit.map {
       case (category, _) =>
         FileHelpers.writeFile(
