@@ -24,11 +24,20 @@ case class Repository private (sgitFilePath: String) {
 
   def getHead(): Option[Commit] = {
     FileHelpers
-      .getContent(
-        s"$sgitFilePath${FileHelpers.separator}.sgit${FileHelpers.separator}HEAD"
-      )
-      .flatMap(FileHelpers.getCommit(this, _))
-      .flatMap(Commit.fromXml(this, _))
+      .getHead(this)
+      .map(Head.fromXml(_))
+      .flatMap(_.getCommit(this))
+  }
+
+  def updateHead(hash: String) = {
+    FileHelpers
+      .getHead(this)
+      .map(Head.fromXml(_))
+      .map(_.update(hash, this)) match {
+      case None =>
+        Head.initialCommit(hash, this)
+      case Some(_) =>
+    }
   }
 
   def getLog() = {
@@ -45,7 +54,6 @@ case class Repository private (sgitFilePath: String) {
         getStage()
           .getStagedFiles()
           .map(_.map { path =>
-            println(path)
             FileHelpers.deleteFile(path.drop(1))
           })
         Some(this)
@@ -54,12 +62,28 @@ case class Repository private (sgitFilePath: String) {
     }
   }
 
-  def fillWith(ref: String): Option[Repository] = {
-    FileHelpers
+  def fillWith(ref: String) = {
+    val commit = FileHelpers
       .getCommit(this, ref)
-      .flatMap(xml => Commit.fromXml(this, xml))
+      .map(("commit", _))
+      .orElse {
+        FileHelpers
+          .getContent(
+            s"${sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}branches${FileHelpers.separator}$ref"
+          )
+          .flatMap(FileHelpers.getCommit(this, _))
+          .map(("branch", _))
+      }
+    commit
+      .flatMap(commit => Commit.fromXml(this, commit._2))
       .map(commit => commit.loadAllFiles())
-    None
+    commit.map {
+      case (category, _) =>
+        FileHelpers.writeFile(
+          s"${sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}HEAD",
+          Head(category, ref).toXml().toString
+        )
+    }
   }
 }
 
@@ -67,18 +91,19 @@ object Repository {
   def initRepository(path: String): Option[Repository] = {
     if (getRepository(path).isEmpty) {
       val hasMadeSgit = FileHelpers.createFolder(".sgit")
-      val files = List("HEAD", "STAGE")
+      val files =
+        List("HEAD", "STAGE", s"branches${FileHelpers.separator}master")
       val folders = List("tags", "trees", "blobs", "branches", "commits")
-      val hasCreatedFolders = files
-        .map(
-          (file) =>
-            FileHelpers.createFile(s".sgit${FileHelpers.separator}$file")
-        )
-        .reduce(_ && _)
-      val hasCreatedFiles = folders
+      val hasCreatedFolders = folders
         .map(
           file =>
             FileHelpers.createFolder(s".sgit${FileHelpers.separator}$file")
+        )
+        .reduce(_ && _)
+      val hasCreatedFiles = files
+        .map(
+          (file) =>
+            FileHelpers.createFile(s".sgit${FileHelpers.separator}$file")
         )
         .reduce(_ && _)
       if (hasCreatedFiles && hasCreatedFolders) Some(Repository(path)) else None

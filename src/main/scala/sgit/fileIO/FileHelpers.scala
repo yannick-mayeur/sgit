@@ -52,15 +52,25 @@ object FileHelpers {
     else None
   }
 
+  def getHead(repository: Repository): Option[scala.xml.Node] = {
+    Try {
+      val file = new File(
+        s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}HEAD"
+      )
+      scala.xml.XML.loadFile(file)
+    }.toOption
+  }
+
   def getCommit(
       repository: Repository,
       hash: String
   ): Option[scala.xml.Node] = {
-    val file = new File(
-      s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}commits${FileHelpers.separator}$hash"
-    )
-    if (file.exists() && file.isFile()) Some(scala.xml.XML.loadFile(file))
-    else None
+    Try {
+      val file = new File(
+        s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}commits${FileHelpers.separator}$hash"
+      )
+      scala.xml.XML.loadFile(file)
+    }.toOption
   }
 
   def getContent(path: String) = {
