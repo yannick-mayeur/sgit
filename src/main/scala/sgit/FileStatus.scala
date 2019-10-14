@@ -57,13 +57,22 @@ object FileStatus {
         .getOrElse(true)
     }._1)
 
-    val untracked = stagedOpt.map { staged =>
-      FileHelpers
-        .listDirectoryFiles(repository.sgitFilePath)
-        .map(path => repository.getPathInRepositoryFor(path))
-        .toList
-        .filterNot(path => staged.contains(path))
-    }
+    val untracked = stagedOpt
+      .map { staged =>
+        FileHelpers
+          .listDirectoryFiles(repository.sgitFilePath)
+          .map(path => repository.getPathInRepositoryFor(path))
+          .toList
+          .filterNot(path => staged.contains(path))
+      }
+      .orElse {
+        Some(
+          FileHelpers
+            .listDirectoryFiles(repository.sgitFilePath)
+            .map(path => repository.getPathInRepositoryFor(path))
+            .toList
+        )
+      }
 
     println("Changes to be committed:")
     toBecommitted.map(_.foreach(println))
