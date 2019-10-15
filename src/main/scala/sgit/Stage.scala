@@ -2,8 +2,6 @@ package sgit
 import sgit.fileIO.FileHelpers
 
 case class Stage private (treeOpt: Option[Tree]) {
-  val stagePath = s"${FileHelpers.separator}.sgit${FileHelpers.separator}STAGE"
-
   def addFiles(repository: Repository, canonicalPaths: Seq[String]) = {
     val treeReducer = (treeOpt1: Option[Tree], treeOpt2: Option[Tree]) => {
       (treeOpt1, treeOpt2) match {
@@ -22,10 +20,10 @@ case class Stage private (treeOpt: Option[Tree]) {
           content.map(Blob(path, _))
       }
 
-    // we drop 1 to remove the file from the path
     val newTrees = blobs.flatMap { blob =>
       blob.name
         .split(FileHelpers.separator)
+        // we drop 1 to remove the file from the path
         .dropRight(1)
         .scanRight[Option[Tree]](None) {
           case (currentPath, previous) =>
@@ -41,7 +39,7 @@ case class Stage private (treeOpt: Option[Tree]) {
     newTrees.reduce(treeReducer) match {
       case Some(newTree) =>
         FileHelpers.writeFile(
-          s"${repository.sgitFilePath}$stagePath",
+          FileHelpers.stagePath(repository),
           newTree.hash
         )
         newTree.save(repository)
@@ -58,15 +56,20 @@ case class Stage private (treeOpt: Option[Tree]) {
     case _ => None
   }
 
+  def save(repository: Repository): Unit = treeOpt.foreach { tree =>
+    FileHelpers.writeFile(
+      FileHelpers.stagePath(repository),
+      tree.hash
+    )
+  }
+
 }
 
 object Stage {
   def loadStage(repository: Repository) = {
-    val stagePath =
-      s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}STAGE"
     Stage(
       FileHelpers
-        .getContent(stagePath)
+        .getContent(FileHelpers.stagePath(repository))
         .flatMap(FileHelpers.getTree(repository, _))
         .map(Tree.fromXml(repository, _))
     )

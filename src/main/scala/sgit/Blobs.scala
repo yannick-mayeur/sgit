@@ -8,18 +8,19 @@ case class Blob(
 ) {
   val hash = FileStatus.getHashFor(content)
 
-  def load() = {
-    FileHelpers.writeFile(name.drop(1), content)
-  }
-}
-
-object Blob {
-  def save(repository: Repository, blob: Blob) {
-    val blobsPath = (repository: Repository, blob: Blob) =>
-      s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}blobs${FileHelpers.separator}${blob.hash}"
+  def toWorkingDirectory(repository: Repository): Unit = {
     FileHelpers.writeFile(
-      blobsPath(repository, blob),
-      blob.content
+      s"${repository.sgitFilePath}$name",
+      content
+    )
+  }
+
+  def save(repository: Repository): Unit = {
+    FileHelpers.writeFile(
+      FileHelpers.blobPath(repository, hash),
+      content
     )
   }
 }
+
+object Blob {}

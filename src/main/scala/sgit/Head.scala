@@ -13,7 +13,7 @@ case class Head(category: String, ref: String) {
     case "branch" =>
       FileHelpers
         .getContent(
-          s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}branches${FileHelpers.separator}$ref"
+          FileHelpers.branchPath(repository, ref)
         )
         .flatMap { ref =>
           FileHelpers
@@ -25,15 +25,20 @@ case class Head(category: String, ref: String) {
 
   def update(hash: String, repository: Repository) = category match {
     case "commit" =>
-      FileHelpers.writeFile(
-        s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}HEAD",
-        this.copy(ref = hash).toXml().toString
-      )
+      val newHead = this.copy(ref = hash)
+      newHead.save(repository)
+      newHead
     case "branch" =>
-      FileHelpers.writeFile(
-        s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}branches${FileHelpers.separator}$ref",
-        hash
-      )
+      Branch(ref, hash).save(repository)
+      this
+    case _ => this
+  }
+
+  def save(repository: Repository): Unit = {
+    FileHelpers.writeFile(
+      FileHelpers.headPath(repository),
+      FileHelpers.formatXml(Head(category, ref).toXml())
+    )
   }
 }
 
@@ -44,14 +49,10 @@ object Head {
     Head(category, ref)
   }
 
-  def initialCommit(hash: String, repository: Repository): Unit = {
-    FileHelpers.writeFile(
-      s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}HEAD",
-      Head("branch", "master").toXml.toString()
-    )
-    FileHelpers.writeFile(
-      s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}branches${FileHelpers.separator}master",
-      hash
-    )
+  def initialCommit(hash: String, repository: Repository) = {
+    val head = Head("branch", "master")
+    head.save(repository)
+    Branch("master", hash).save(repository)
+    head
   }
 }

@@ -19,15 +19,13 @@ case class Tree(
     </Tree>
   }
 
-  def save(repository: Repository) {
-    val treesPath = (repository: Repository, tree: Tree) =>
-      s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}trees${FileHelpers.separator}${tree.hash}"
+  def save(repository: Repository): Unit = {
     FileHelpers.writeFile(
-      treesPath(repository, this),
+      FileHelpers.treePath(repository, hash),
       FileHelpers.formatXml(this.toXml())
     )
     trees.foreach(_.save(repository))
-    blobs.foreach(Blob.save(repository, _))
+    blobs.foreach(_.save(repository))
   }
 
   def getBlobContentAt(path: String): Option[String] = {

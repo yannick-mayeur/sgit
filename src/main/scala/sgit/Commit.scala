@@ -25,17 +25,15 @@ case class Commit(
 
   def getLog(): String = {
     s"""
-    commit $hash
-    date: $timestamp
-    message: $message
-    ${previous.map(commit => s"\n${commit.getLog()}").getOrElse("")}"""
+commit $hash
+date: $timestamp
+message: $message
+${previous.map(commit => s"\n${commit.getLog()}").getOrElse("")}"""
   }
 
-  def save(repository: Repository) = {
-    val commitPath = (repository: Repository) =>
-      s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}commits${FileHelpers.separator}${hash}"
+  def save(repository: Repository): Unit = {
     FileHelpers.writeFile(
-      commitPath(repository),
+      FileHelpers.commitPath(repository, hash),
       FileHelpers.formatXml(this.toXml())
     )
     repository.updateHead(hash)
@@ -44,7 +42,8 @@ case class Commit(
 
   def getContentFor(path: String) = rootTree.getBlobContentAt(path)
 
-  def loadAllFiles() = rootTree.getAllBlobs().map(_.load())
+  def loadAllFiles(repository: Repository): Unit =
+    rootTree.getAllBlobs().foreach(_.toWorkingDirectory(repository))
 }
 
 object Commit {

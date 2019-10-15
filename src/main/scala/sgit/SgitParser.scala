@@ -121,7 +121,7 @@ object SgitParser extends App {
                       repository.getHead()
                     )
                 )
-                .map(_.save(repository))
+                .foreach(_.save(repository))
             case _ => println("Not in a repository...")
           }
         case Config("log", _, _, _) =>
@@ -138,7 +138,7 @@ object SgitParser extends App {
                 .getHead()
                 .map { commit =>
                   FileHelpers.writeFile(
-                    s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}branches${FileHelpers.separator}${config.ref}",
+                    FileHelpers.branchPath(repository, config.ref),
                     commit.hash
                   )
                 }

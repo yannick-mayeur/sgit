@@ -33,11 +33,8 @@ case class Repository private (sgitFilePath: String) {
     FileHelpers
       .getHead(this)
       .map(Head.fromXml(_))
-      .map(_.update(hash, this)) match {
-      case None =>
-        Head.initialCommit(hash, this)
-      case Some(_) =>
-    }
+      .map(_.update(hash, this))
+      .orElse(Some(Head.initialCommit(hash, this)))
   }
 
   def getLog() = {
@@ -53,7 +50,7 @@ case class Repository private (sgitFilePath: String) {
       case false =>
         getStage()
           .getStagedFiles()
-          .map(_.map { path =>
+          .foreach(_.foreach { path =>
             FileHelpers.deleteFile(path.drop(1))
           })
         Some(this)
@@ -62,14 +59,14 @@ case class Repository private (sgitFilePath: String) {
     }
   }
 
-  def fillWith(ref: String) = {
+  def fillWith(ref: String): Unit = {
     val commit = FileHelpers
       .getCommit(this, ref)
       .map(("commit", _))
       .orElse {
         FileHelpers
           .getContent(
-            s"${sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}branches${FileHelpers.separator}$ref"
+            FileHelpers.branchPath(this, ref)
           )
           .flatMap(FileHelpers.getCommit(this, _))
           .map(("branch", _))
@@ -77,18 +74,12 @@ case class Repository private (sgitFilePath: String) {
     commit
       .flatMap(commit => Commit.fromXml(this, commit._2))
       .foreach { commit =>
-        commit.loadAllFiles()
-        FileHelpers.writeFile(
-          s"${sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}STAGE",
-          commit.hash
-        )
+        commit.loadAllFiles(this)
+        Stage(Some(commit.rootTree)).save(this)
       }
-    commit.map {
+    commit.foreach {
       case (category, _) =>
-        FileHelpers.writeFile(
-          s"${sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}HEAD",
-          Head(category, ref).toXml().toString
-        )
+        Head(category, ref).save(this)
     }
   }
 }
