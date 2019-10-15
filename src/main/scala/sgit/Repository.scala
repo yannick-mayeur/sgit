@@ -46,15 +46,15 @@ case class Repository private (sgitFilePath: String) {
   }
 
   def cleanWorkingDirectory(): Option[Repository] = {
-    Diff.isDiffWithWorkingDirecory(this) match {
-      case false =>
+    Diff.isDiffWithWorkingDirecory(this) && Diff.isDiffWithLastCommit(this) match {
+      case true =>
         getStage()
           .getStagedFiles()
           .foreach(_.foreach { path =>
             FileHelpers.deleteFile(path.drop(1))
           })
         Some(this)
-      case true =>
+      case false =>
         None
     }
   }
