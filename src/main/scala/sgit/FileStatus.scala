@@ -11,7 +11,7 @@ object FileStatus {
       .mkString
   }
 
-  def printStatus(repository: Repository) = {
+  def printStatus(repository: Repository): Unit = {
     val stagedOpt = repository.getStage().getStagedFiles()
 
     val toBecommitted = stagedOpt.map(_.partition { path =>

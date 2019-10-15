@@ -14,6 +14,24 @@ import scala.util.Try
 object FileHelpers {
   val separator = File.separator
 
+  val blobPath = (repository: Repository, hash: String) =>
+    s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}blobs${FileHelpers.separator}${hash}"
+
+  val treePath = (repository: Repository, hash: String) =>
+    s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}trees${FileHelpers.separator}${hash}"
+
+  val commitPath = (repository: Repository, hash: String) =>
+    s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}commits${FileHelpers.separator}${hash}"
+
+  val branchPath = (repository: Repository, name: String) =>
+    s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}branches${FileHelpers.separator}${name}"
+
+  val stagePath = (repository: Repository) =>
+    s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}STAGE"
+
+  val headPath = (repository: Repository) =>
+    s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}HEAD"
+
   def getCanonical(currentDirPath: String, filePath: String) = {
     new File(s"$currentDirPath$separator$filePath").getCanonicalPath()
   }

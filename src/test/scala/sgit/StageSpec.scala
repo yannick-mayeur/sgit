@@ -34,7 +34,6 @@ class StageSpec extends FlatSpec with Matchers {
     val treeFile = new File(
       s"${repository.sgitFilePath}${File.separator}.sgit${File.separator}trees${File.separator}${newStage.treeOpt.get.hash}"
     )
-    println(treeFile.getPath())
     assert(treeFile.exists())
     foo.delete()
   }
