@@ -14,48 +14,13 @@ object FileStatus {
   def printStatus(repository: Repository): Unit = {
     val stagedOpt = repository.getStage().getStagedFiles()
 
-    val toBecommitted = stagedOpt.map(_.partition { path =>
-      val stagedContentOpt = repository.getStage().getContentFor(path)
-      val commitContentOpt =
-        repository.getHead().flatMap(_.rootTree.getBlobContentAt(path))
-      val diffs = for {
-        stagedContent <- stagedContentOpt
-        commitContent <- commitContentOpt
-      } yield {
-        val elem1 = stagedContent.split("\n")
-        val elem2 = commitContent.split("\n")
-        val d = Diff.getDiffBetweenElements(elem1, elem2)
-        d
-      }
-      diffs
-        .map(
-          _.changes
-            .map(change => change._1 == "> " || change._1 == "< ")
-            .reduce(_ || _)
-        )
-        .getOrElse(true)
-    }._1)
+    val getBlobContent = (path: String) =>
+      Blob.load(path, repository).map(_.content)
+    val toBecommitted = Diff.getDiffBetweenStageAnd(getBlobContent, repository)
 
-    val modified = stagedOpt.map(_.partition { path =>
-      val stagedContentOpt = repository.getStage().getContentFor(path)
-      val commitContentOpt = FileHelpers.getContent(path.drop(1))
-      val diffs = for {
-        stagedContent <- stagedContentOpt
-        commitContent <- commitContentOpt
-      } yield {
-        val elem1 = stagedContent.split("\n")
-        val elem2 = commitContent.split("\n")
-        val d = Diff.getDiffBetweenElements(elem1, elem2)
-        d
-      }
-      diffs
-        .map(
-          _.changes
-            .map(change => change._1 == "> " || change._1 == "< ")
-            .reduce(_ || _)
-        )
-        .getOrElse(true)
-    }._1)
+    val getContentFor = (path: String) =>
+      repository.getHead().flatMap(_.rootTree.getBlobContentAt(path))
+    val modified = Diff.getDiffBetweenStageAnd(getContentFor, repository)
 
     val untracked = stagedOpt
       .map { staged =>
