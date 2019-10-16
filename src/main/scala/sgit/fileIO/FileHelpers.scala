@@ -32,8 +32,8 @@ object FileHelpers {
   val headPath = (repository: Repository) =>
     s"${repository.sgitFilePath}${FileHelpers.separator}.sgit${FileHelpers.separator}HEAD"
 
-  def getCanonical(currentDirPath: String, filePath: String) = {
-    new File(s"$currentDirPath$separator$filePath").getCanonicalPath()
+  def getCanonical(filePath: String) = {
+    new File(s"$filePath").getCanonicalPath()
   }
 
   def createFolder(path: String) = {

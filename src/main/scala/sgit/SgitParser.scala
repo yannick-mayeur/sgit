@@ -1,8 +1,6 @@
 package sgit
 import scopt.OParser
-import scala.xml._
 import sgit.fileIO.FileHelpers
-import java.{util => ju}
 
 case class Config(
     command: String = "",
@@ -88,60 +86,31 @@ object SgitParser extends App {
         case Config("add", files, _, _) =>
           Repository.getRepository(currentDirPath) match {
             case Some(repository) =>
-              repository
-                .getStage()
-                .addFiles(
-                  repository,
-                  files
-                    .map(file => FileHelpers.getCanonical(currentDirPath, file))
-                    .flatMap(file => FileHelpers.listDirectoryFiles(file))
-                )
+              repository.addFiles(files)
             case _ => println("Not in a repository...")
           }
         case Config("checkout", _, _, _) =>
           Repository.getRepository(currentDirPath) match {
             case Some(repository) =>
-              repository
-                .cleanWorkingDirectory()
-                .map(_.fillWith(config.ref))
+              repository.checkout(config.ref)
             case _ => println("Not in a repository...")
           }
         case Config("commit", _, _, _) =>
           Repository.getRepository(currentDirPath) match {
             case Some(repository) =>
-              repository
-                .getStage()
-                .treeOpt
-                .map(
-                  tree =>
-                    Commit(
-                      tree,
-                      ju.Calendar.getInstance().getTime().toString(),
-                      config.commit,
-                      repository.getHead()
-                    )
-                )
-                .foreach(_.save(repository))
+              repository.commit(config.commit)
             case _ => println("Not in a repository...")
           }
         case Config("log", _, _, _) =>
           Repository.getRepository(currentDirPath) match {
             case Some(repository) =>
-              val log = repository.getLog()
-              println(log)
+              println(repository.getLog())
             case _ => println("Not in a repository...")
           }
         case Config("branch", _, _, _) =>
           Repository.getRepository(currentDirPath) match {
             case Some(repository) =>
-              repository
-                .getHead()
-                .map { commit =>
-                  FileHelpers.writeFile(
-                    FileHelpers.branchPath(repository, config.ref),
-                    commit.hash
-                  )
-                }
+              repository.createBranch(config.ref)
             case _ => println("Not in a repository...")
           }
         case Config("test", _, _, _) => ???

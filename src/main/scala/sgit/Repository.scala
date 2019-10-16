@@ -1,6 +1,7 @@
 package sgit
 import scala.annotation.tailrec
 import sgit.fileIO.FileHelpers
+import java.{util => ju}
 
 case class Repository private (sgitFilePath: String) {
   val getRepositoryRootFolder = () => {
@@ -81,6 +82,46 @@ case class Repository private (sgitFilePath: String) {
       case (category, _) =>
         Head(category, ref).save(this)
     }
+  }
+
+  def addFiles(pathToFiles: Seq[String]): Unit = {
+    this
+      .getStage()
+      .addFiles(
+        this,
+        pathToFiles
+          .map(file => FileHelpers.getCanonical(file))
+          .flatMap(file => FileHelpers.listDirectoryFiles(file))
+      )
+  }
+
+  def checkout(ref: String): Unit = {
+    cleanWorkingDirectory()
+      .map(_.fillWith(ref))
+  }
+
+  def commit(message: String): Unit = {
+    getStage().treeOpt
+      .map(
+        tree =>
+          Commit(
+            tree,
+            ju.Calendar.getInstance().getTime().toString(),
+            message,
+            getHead()
+          )
+      )
+      .foreach(_.save(this))
+  }
+
+  def createBranch(name: String): Unit = {
+    getHead()
+      .map { commit =>
+        FileHelpers.writeFile(
+          FileHelpers.branchPath(this, name),
+          commit.hash
+        )
+      }
   }
 }
 
