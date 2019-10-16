@@ -6,16 +6,19 @@ import sgit.fileIO.FileHelpers
 case class Diff[T](changes: Seq[(String, T)])
 
 object Diff {
-  def isDiffWithWorkingDirecory(repository: Repository) = {
-    val res = repository
+  def getDiffBetweenStageAnd(
+      getContentFor: String => Option[String],
+      repository: Repository
+  ) = {
+    repository
       .getStage()
       .getStagedFiles()
       .map(_.partition { path =>
         val stagedContentOpt = repository.getStage().getContentFor(path)
-        val commitContentOpt = FileHelpers.getContent(path.drop(1))
+        val otherContentOpt = getContentFor(path)
         val diffs = for {
           stagedContent <- stagedContentOpt
-          commitContent <- commitContentOpt
+          commitContent <- otherContentOpt
         } yield {
           val elem1 = stagedContent.split("\n")
           val elem2 = commitContent.split("\n")
@@ -30,35 +33,22 @@ object Diff {
           )
           .getOrElse(true)
       }._1)
-    res.map(_.isEmpty).getOrElse(true)
+  }
+
+  def isDiffWithWorkingDirecory(repository: Repository) = {
+    val getBlobContent = (path: String) =>
+      Blob.load(path, repository).map(_.content)
+    getDiffBetweenStageAnd(getBlobContent, repository)
+      .map(_.isEmpty)
+      .getOrElse(true)
   }
 
   def isDiffWithLastCommit(repository: Repository): Boolean = {
-    val res = repository
-      .getStage()
-      .getStagedFiles()
-      .map(_.partition { path =>
-        val stagedContentOpt = repository.getStage().getContentFor(path)
-        val commitContentOpt =
-          repository.getHead().flatMap(_.rootTree.getBlobContentAt(path))
-        val diffs = for {
-          stagedContent <- stagedContentOpt
-          commitContent <- commitContentOpt
-        } yield {
-          val elem1 = stagedContent.split("\n")
-          val elem2 = commitContent.split("\n")
-          val d = Diff.getDiffBetweenElements(elem1, elem2)
-          d
-        }
-        diffs
-          .map(
-            _.changes
-              .map(change => change._1 == "> " || change._1 == "< ")
-              .reduce(_ || _)
-          )
-          .getOrElse(true)
-      }._1)
-    res.map(_.isEmpty).getOrElse(true)
+    val getContentFor = (path: String) =>
+      repository.getHead().flatMap(_.rootTree.getBlobContentAt(path))
+    getDiffBetweenStageAnd(getContentFor, repository)
+      .map(_.isEmpty)
+      .getOrElse(true)
   }
 
   def getDiffBetweenElements[T](elem1: Seq[T], elem2: Seq[T]) = {

@@ -23,4 +23,8 @@ case class Blob(
   }
 }
 
-object Blob {}
+object Blob {
+  def load(path: String, repository: Repository) = {
+    FileHelpers.getContent(path.drop(1)).map(Blob(path, _))
+  }
+}
