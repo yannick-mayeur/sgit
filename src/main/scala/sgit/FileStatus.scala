@@ -16,11 +16,11 @@ object FileStatus {
 
     val getBlobContent = (path: String) =>
       Blob.load(path, repository).map(_.content)
-    val toBecommitted = Diff.getDiffBetweenStageAnd(getBlobContent, repository)
+    val modified = Diff.getDiffBetweenStageAnd(getBlobContent, repository)
 
     val getContentFor = (path: String) =>
       repository.getHead().flatMap(_.rootTree.getBlobContentAt(path))
-    val modified = Diff.getDiffBetweenStageAnd(getContentFor, repository)
+    val toBecommitted = Diff.getDiffBetweenStageAnd(getContentFor, repository)
 
     val untracked = stagedOpt
       .map { staged =>
