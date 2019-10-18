@@ -1,20 +1,18 @@
 package sgit
 import scala.annotation.tailrec
 import scala.collection.mutable
-import sgit.fileIO.FileHelpers
 
 case class Diff[T](changes: Seq[(String, T)])
 
 object Diff {
   def getDiffBetweenStageAnd(
       getContentFor: String => Option[String],
-      repository: Repository
+      stage: Stage
   ) = {
-    repository
-      .getStage()
+    stage
       .getStagedFiles()
       .map(_.partition { path =>
-        val stagedContentOpt = repository.getStage().getContentFor(path)
+        val stagedContentOpt = stage.getContentFor(path)
         val otherContentOpt = getContentFor(path)
         val diffs = for {
           stagedContent <- stagedContentOpt
@@ -35,18 +33,20 @@ object Diff {
       }._1)
   }
 
-  def isDiffWithWorkingDirecory(repository: Repository) = {
+  def isDiffWithWorkingDirecory(
+      getContentInWD: String => Option[String],
+      stage: Stage
+  ) = {
     val getBlobContent = (path: String) =>
-      Blob.load(path, repository).map(_.content)
-    getDiffBetweenStageAnd(getBlobContent, repository)
+      Blob.loadFromWD(path, getContentInWD).map(_.content)
+    getDiffBetweenStageAnd(getBlobContent, stage)
       .map(_.isEmpty)
       .getOrElse(true)
   }
 
-  def isDiffWithLastCommit(repository: Repository): Boolean = {
-    val getContentFor = (path: String) =>
-      repository.getHead().flatMap(_.rootTree.getBlobContentAt(path))
-    getDiffBetweenStageAnd(getContentFor, repository)
+  def isDiffWithLastCommit(head: Commit, stage: Stage): Boolean = {
+    val getContentFor = (path: String) => head.rootTree.getBlobContentAt(path)
+    getDiffBetweenStageAnd(getContentFor, stage)
       .map(_.isEmpty)
       .getOrElse(true)
   }

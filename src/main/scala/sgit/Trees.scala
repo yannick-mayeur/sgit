@@ -1,12 +1,11 @@
 package sgit
-import sgit.fileIO.FileHelpers
 
 case class Tree(
     name: String,
     trees: Seq[Tree],
     blobs: Seq[Blob]
 ) {
-  val hash = FileStatus.getHashFor(this.toString())
+  val hash = Helper.getHashFor(this.toString())
   def toXml() = {
     <Tree>
       <name>{name}</name>
@@ -19,30 +18,30 @@ case class Tree(
     </Tree>
   }
 
-  def save(repository: Repository): Unit = {
-    FileHelpers.writeFile(
-      FileHelpers.treePath(repository, hash),
-      FileHelpers.formatXml(this.toXml())
-    )
-    trees.foreach(_.save(repository))
-    blobs.foreach(_.save(repository))
+  def save(
+      writeTreeToRepository: Option[String] => (xml.Node => Unit),
+      writeBlobToRepository: Option[String] => (String => Unit)
+  ): Unit = {
+    writeTreeToRepository(Some(hash))(toXml())
+    trees.foreach(_.save(writeTreeToRepository, writeBlobToRepository))
+    blobs.foreach(_.save(writeBlobToRepository))
   }
 
   def getBlobContentAt(path: String): Option[String] = {
-    path.split(FileHelpers.separator).toList match {
+    path.split(Helper.separator).toList match {
       case x1 :: x2 :: Nil if x1 == name =>
         blobs
-          .filter(_.name.split(FileHelpers.separator).lastOption.contains(x2))
+          .filter(_.name.split(Helper.separator).lastOption.contains(x2))
           .map(_.content)
           .headOption
       case x1 :: x2 :: xs if x1 == name =>
         trees
           .filter(_.name == x2)
           .headOption
-          .flatMap(_.getBlobContentAt(xs.mkString(FileHelpers.separator)))
+          .flatMap(_.getBlobContentAt(xs.mkString(Helper.separator)))
       case x :: Nil =>
         blobs
-          .filter(_.name.split(FileHelpers.separator).lastOption.contains(x))
+          .filter(_.name.split(Helper.separator).lastOption.contains(x))
           .map(_.content)
           .headOption
       case x => None
@@ -74,17 +73,22 @@ case class Tree(
 }
 
 object Tree {
-  def fromXml(repository: Repository, node: scala.xml.Node): Tree = {
+  def fromXml(
+      getTreeFromRepository: String => Option[xml.Node],
+      getBlobContentFrom: String => Option[String],
+      node: scala.xml.Node
+  ): Tree = {
     val name = (node \ "name").text
     val trees = (node \ "trees" \ "tree").flatMap { treeNode =>
-      FileHelpers
-        .getTree(repository, treeNode.text)
-        .map(nextTreeNode => Tree.fromXml(repository, nextTreeNode))
+      getTreeFromRepository(treeNode.text)
+        .map(
+          nextTreeNode =>
+            Tree
+              .fromXml(getTreeFromRepository, getBlobContentFrom, nextTreeNode)
+        )
     }
     val blobs = (node \ "blobs" \ "blob").flatMap { node =>
-      FileHelpers
-        .getBlob(repository, node.text)
-        .map(content => Blob(node \@ "name", content))
+      Blob.loadFromRepo(node \@ "name", node.text, getBlobContentFrom)
     }
 
     Tree(name, trees, blobs)

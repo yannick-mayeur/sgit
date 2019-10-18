@@ -15,7 +15,7 @@ class TreeSpec extends FlatSpec with Matchers {
     val tree =
       Tree("azer", Seq(Tree("test", Seq(), Seq(Blob("foo", "bar")))), Seq())
     val res =
-      FileStatus.getHashFor(
+      Helper.getHashFor(
         "Tree(azer,List(Tree(test,List(),List(Blob(foo,bar)))),List())"
       )
     tree.hash shouldBe res

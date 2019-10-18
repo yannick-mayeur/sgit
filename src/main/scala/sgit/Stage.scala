@@ -1,8 +1,13 @@
 package sgit
-import sgit.fileIO.FileHelpers
 
 case class Stage private (treeOpt: Option[Tree]) {
-  def addFiles(repository: Repository, canonicalPaths: Seq[String]) = {
+  def addFiles(
+      writeStageToRepository: String => Unit,
+      writeTreeToRepository: Option[String] => (xml.Node => Unit),
+      writeBlobToRepository: Option[String] => (String => Unit),
+      getBlobContentFrom: (String) => Option[String],
+      pathFiles: Seq[String]
+  ) = {
     val treeReducer = (treeOpt1: Option[Tree], treeOpt2: Option[Tree]) => {
       (treeOpt1, treeOpt2) match {
         case (Some(tree1), Some(tree2)) => Some(tree2.merge(tree1))
@@ -12,17 +17,11 @@ case class Stage private (treeOpt: Option[Tree]) {
       }
     }
 
-    val blobs = canonicalPaths
-      .map(canonicalPath => repository.getPathInRepositoryFor(canonicalPath))
-      .map(path => (path, FileHelpers.getContent(path.drop(1))))
-      .flatMap {
-        case (path, content) =>
-          content.map(Blob(path, _))
-      }
+    val blobs = pathFiles.flatMap(Blob.loadFromWD(_, getBlobContentFrom))
 
     val newTrees = blobs.flatMap { blob =>
       blob.name
-        .split(FileHelpers.separator)
+        .split(Helper.separator)
         // we drop 1 to remove the file from the path
         .dropRight(1)
         .scanRight[Option[Tree]](None) {
@@ -38,12 +37,10 @@ case class Stage private (treeOpt: Option[Tree]) {
 
     newTrees.reduce(treeReducer) match {
       case Some(newTree) =>
-        FileHelpers.writeFile(
-          FileHelpers.stagePath(repository),
-          newTree.hash
-        )
-        newTree.save(repository)
-        this.copy(Some(newTree))
+        newTree.save(writeTreeToRepository, writeBlobToRepository)
+        val newStage = this.copy(Some(newTree))
+        newStage.save(writeStageToRepository)
+        newStage
       case _ => this
     }
   }
@@ -56,22 +53,23 @@ case class Stage private (treeOpt: Option[Tree]) {
     case _ => None
   }
 
-  def save(repository: Repository): Unit = treeOpt.foreach { tree =>
-    FileHelpers.writeFile(
-      FileHelpers.stagePath(repository),
-      tree.hash
-    )
+  def save(writeStageToRepository: String => Unit): Unit = treeOpt.foreach {
+    tree =>
+      writeStageToRepository(tree.hash)
   }
 
 }
 
 object Stage {
-  def loadStage(repository: Repository) = {
+  def loadStage(
+      getStageContent: () => Option[String],
+      getTreeContentFrom: String => Option[xml.Node],
+      getBlobContentFrom: String => Option[String]
+  ) = {
     Stage(
-      FileHelpers
-        .getContent(FileHelpers.stagePath(repository))
-        .flatMap(FileHelpers.getTree(repository, _))
-        .map(Tree.fromXml(repository, _))
+      getStageContent()
+        .flatMap(getTreeContentFrom(_))
+        .map(Tree.fromXml(getTreeContentFrom, getBlobContentFrom, _))
     )
   }
 }
