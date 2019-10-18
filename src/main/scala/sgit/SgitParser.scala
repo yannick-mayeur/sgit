@@ -1,6 +1,5 @@
 package sgit
 import scopt.OParser
-import sgit.fileIO.FileHelpers
 
 case class Config(
     command: String = "",
@@ -80,7 +79,7 @@ object SgitParser extends App {
           Repository.initRepository(currentDirPath)
         case Config("status", _, _, _) =>
           Repository.getRepository(currentDirPath) match {
-            case Some(repository) => FileStatus.printStatus(repository)
+            case Some(repository) => repository.printStatus()
             case _                => println("Not in a repository...")
           }
         case Config("add", files, _, _) =>

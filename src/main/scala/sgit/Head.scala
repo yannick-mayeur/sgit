@@ -1,44 +1,55 @@
 package sgit
 import scala.xml._
-import sgit.fileIO.FileHelpers
 
 case class Head(category: String, ref: String) {
   def toXml() = <Head category={category}>{ref}</Head>
 
-  def getCommit(repository: Repository) = category match {
+  def getCommit(
+      getCommitXmlFrom: String => Option[xml.Node],
+      getTreeXmlFrom: String => Option[xml.Node],
+      getBlobContentFrom: String => Option[String],
+      getBranchContentFrom: String => Option[String]
+  ) = category match {
     case "commit" =>
-      FileHelpers
-        .getCommit(repository, ref)
-        .flatMap(Commit.fromXml(repository, _))
-    case "branch" =>
-      FileHelpers
-        .getContent(
-          FileHelpers.branchPath(repository, ref)
+      getCommitXmlFrom(ref)
+        .flatMap(
+          Commit
+            .fromXml(getCommitXmlFrom, getTreeXmlFrom, getBlobContentFrom, _)
         )
+    case "branch" =>
+      getBranchContentFrom(ref)
         .flatMap { ref =>
-          FileHelpers
-            .getCommit(repository, ref)
-            .flatMap(Commit.fromXml(repository, _))
+          getCommitXmlFrom(ref)
+            .flatMap(
+              Commit
+                .fromXml(
+                  getCommitXmlFrom,
+                  getTreeXmlFrom,
+                  getBlobContentFrom,
+                  _
+                )
+            )
         }
 
   }
 
-  def update(hash: String, repository: Repository) = category match {
+  def update(
+      writeHeadToRepository: xml.Node => Unit,
+      writeBranchToRepository: Option[String] => (String => Unit),
+      hash: String
+  ) = category match {
     case "commit" =>
       val newHead = this.copy(ref = hash)
-      newHead.save(repository)
+      newHead.save(writeHeadToRepository)
       newHead
     case "branch" =>
-      Branch(ref, hash).save(repository)
+      Branch(ref, hash).save(writeBranchToRepository)
       this
     case _ => this
   }
 
-  def save(repository: Repository): Unit = {
-    FileHelpers.writeFile(
-      FileHelpers.headPath(repository),
-      FileHelpers.formatXml(Head(category, ref).toXml())
-    )
+  def save(writeHeadToRepository: xml.Node => Unit): Unit = {
+    writeHeadToRepository(Head(category, ref).toXml)
   }
 }
 
@@ -49,10 +60,14 @@ object Head {
     Head(category, ref)
   }
 
-  def initialCommit(hash: String, repository: Repository) = {
+  def initialCommit(
+      writeHeadToRepository: xml.Node => Unit,
+      writeBranchToRepository: Option[String] => (String => Unit),
+      hash: String
+  ) = {
     val head = Head("branch", "master")
-    head.save(repository)
-    Branch("master", hash).save(repository)
+    head.save(writeHeadToRepository)
+    Branch("master", hash).save(writeBranchToRepository)
     head
   }
 }

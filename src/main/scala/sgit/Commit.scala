@@ -1,5 +1,4 @@
 package sgit
-import sgit.fileIO.FileHelpers
 
 case class Commit(
     rootTree: Tree,
@@ -7,7 +6,7 @@ case class Commit(
     message: String,
     previous: Option[Commit]
 ) {
-  val hash = FileStatus.getHashFor(this.toString)
+  val hash = Helper.getHashFor(this.toString)
 
   def toXml() = {
     <Commit>
@@ -31,33 +30,43 @@ message: $message
 ${previous.map(commit => s"\n${commit.getLog()}").getOrElse("")}"""
   }
 
-  def save(repository: Repository): Unit = {
-    FileHelpers.writeFile(
-      FileHelpers.commitPath(repository, hash),
-      FileHelpers.formatXml(this.toXml())
-    )
-    repository.updateHead(hash)
-    rootTree.save(repository)
+  def save(
+      writeCommitToRepository: Option[String] => (xml.Node => Unit),
+      writeTreeToRepository: Option[String] => (xml.Node => Unit),
+      writeBlobToRepository: Option[String] => (String => Unit)
+  ): Unit = {
+    writeCommitToRepository(Some(hash))(toXml)
+    rootTree.save(writeTreeToRepository, writeBlobToRepository)
   }
 
   def getContentFor(path: String) = rootTree.getBlobContentAt(path)
 
-  def loadAllFiles(repository: Repository): Unit =
-    rootTree.getAllBlobs().foreach(_.toWorkingDirectory(repository))
+  def loadAllFiles(
+      writeToWorkingDirectory: Option[String] => (String => Unit)
+  ): Unit = {
+    rootTree
+      .getAllBlobs()
+      .foreach(_.toWorkingDirectory(writeToWorkingDirectory))
+  }
 }
 
 object Commit {
-  def fromXml(repository: Repository, node: scala.xml.Node): Option[Commit] = {
+  def fromXml(
+      getCommitXmlFrom: String => Option[xml.Node],
+      getTreeXmlFrom: String => Option[xml.Node],
+      getBlobContentFrom: String => Option[String],
+      node: xml.Node
+  ): Option[Commit] = {
     val message = (node \ "message").text
     val timestamp = (node \ "timestamp").text
     val rootTreeHash = (node \ "rootTreeHash").text
     val previousHash = (node \ "previousHash").text
-    val previous = FileHelpers
-      .getCommit(repository, previousHash)
-      .flatMap(Commit.fromXml(repository, _))
-    FileHelpers
-      .getTree(repository, rootTreeHash)
-      .map(Tree.fromXml(repository, _))
+    val previous = getCommitXmlFrom(previousHash)
+      .flatMap(
+        Commit.fromXml(getCommitXmlFrom, getTreeXmlFrom, getBlobContentFrom, _)
+      )
+    getTreeXmlFrom(rootTreeHash)
+      .map(Tree.fromXml(getTreeXmlFrom, getBlobContentFrom, _))
       .map(Commit(_, timestamp, message, previous))
   }
 }
