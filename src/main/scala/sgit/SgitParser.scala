@@ -42,6 +42,9 @@ object SgitParser extends App {
             .required()
             .action((r, c) => c.copy(ref = r))
         ),
+      cmd("diff")
+        .text("Print the diff between working directory and stage")
+        .action((_, c) => c.copy(command = "diff")),
       cmd("add")
         .text("Add files to the stage area")
         .action((_, c) => c.copy(command = "add"))
@@ -113,8 +116,14 @@ object SgitParser extends App {
               repository.createBranch(config.ref)
             case _ => println("Not in a repository...")
           }
+        case Config("diff", _, _, _) =>
+          Repository.getRepository(currentDirPath) match {
+            case Some(repository) =>
+              FileStatus.printDiff(repository)
+            case _ => println("Not in a repository...")
+          }
         case Config("test", _, _, _) => ???
-        case _                       =>
+        case _                          =>
       }
     case _ =>
     // arguments are bad, error message is displayed

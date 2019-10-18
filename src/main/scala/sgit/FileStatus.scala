@@ -11,6 +11,30 @@ object FileStatus {
       .mkString
   }
 
+  def printDiff(repository: Repository) = {
+    val stagedOpt = repository.getStage().getStagedFiles()
+    val modified = stagedOpt.map(_.flatMap { path =>
+      val stagedContentOpt = repository.getStage().getContentFor(path)
+      val commitContentOpt = FileHelpers.getContent(path.drop(1))
+      val diffs = for {
+        stagedContent <- stagedContentOpt
+        commitContent <- commitContentOpt
+      } yield {
+        val elem1 = stagedContent.split("\n")
+        val elem2 = commitContent.split("\n")
+        val d = Diff.getDiffBetweenElements(elem1, elem2)
+        d
+      }
+      println(path)
+      diffs
+        .filter(
+          _.changes
+            .map(change => change._1 == "> " || change._1 == "< ")
+            .reduce(_ || _)
+        )
+    }).foreach(println)
+  }
+
   def printStatus(repository: Repository): Unit = {
     val stagedOpt = repository.getStage().getStagedFiles()
 
