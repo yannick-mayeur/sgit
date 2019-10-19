@@ -4,10 +4,6 @@ import org.scalatest._
 
 class CommitSpec extends FlatSpec with Matchers {
 
-  "Commit" should "transform to xml" in {
-    pending
-  }
-
   it should "return log" in {
     val tree = Tree("foo", Seq(), Seq())
     val previous = Commit(tree, "time", "message", None)
