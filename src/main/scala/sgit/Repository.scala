@@ -52,26 +52,15 @@ case class Repository private (sgitFilePath: String)(
       s"$sgitFilePath${fileHelper.separator}.sgit${fileHelper.separator}HEAD"
     )(None) _
 
-  val getRepositoryRootFolder = () => {
-    sgitFilePath
-      .split(fileHelper.separator)
-      .dropRight(1)
-      .mkString(fileHelper.separator)
-  }
-
   def getPathInRepositoryFor(filePath: String): String = {
     filePath.replaceFirst(s"$sgitFilePath", "")
-  }
-
-  def isInRepository(path: String): Boolean = {
-    path.contains(sgitFilePath)
   }
 
   def getStage() = {
     Stage.loadStage(getStageContent, getTreeXmlFrom, getBlobContent)
   }
 
-  def getHead(): Option[Commit] = {
+  def getHeadCommit(): Option[Commit] = {
     getHeadContent()
       .map(Head.fromXml(_))
       .flatMap(
@@ -84,7 +73,7 @@ case class Repository private (sgitFilePath: String)(
       )
   }
 
-  def updateHead(hash: String) = {
+  def updateHeadWith(hash: String) = {
     getHeadContent()
       .map(Head.fromXml(_))
       .map(_.update(writeHeadToRepository, writeBranchToRepository, hash))
@@ -97,7 +86,7 @@ case class Repository private (sgitFilePath: String)(
   }
 
   def getLog() = {
-    getHead()
+    getHeadCommit()
       .map { commit =>
         commit.getLog()
       }
@@ -105,7 +94,7 @@ case class Repository private (sgitFilePath: String)(
   }
 
   def cleanWorkingDirectory(): Option[Repository] = {
-    Diff.isDiffWithWorkingDirecory(getContentFromWD, getStage()) && getHead()
+    Diff.isDiffWithWorkingDirecory(getContentFromWD, getStage()) && getHeadCommit()
       .map(Diff.isDiffWithLastCommit(_, getStage()))
       .getOrElse(true) match {
       case true =>
@@ -176,7 +165,7 @@ case class Repository private (sgitFilePath: String)(
             tree,
             ju.Calendar.getInstance().getTime().toString(),
             message,
-            getHead()
+            getHeadCommit()
           )
       )
     commit.foreach(
@@ -186,11 +175,11 @@ case class Repository private (sgitFilePath: String)(
         writeBlobsToRepository
       )
     )
-    commit.map(commit => updateHead(commit.hash))
+    commit.map(commit => updateHeadWith(commit.hash))
   }
 
   def createBranch(name: String): Unit = {
-    getHead()
+    getHeadCommit()
       .map { commit =>
         writeBranchToRepository(Some(name))(commit.hash)
       }
@@ -204,7 +193,7 @@ case class Repository private (sgitFilePath: String)(
     val modified = Diff.getDiffBetweenStageAnd(getBlobContent, getStage())
 
     val getContentFor = (path: String) =>
-      getHead().flatMap(_.rootTree.getBlobContentAt(path))
+      getHeadCommit().flatMap(_.rootTree.getBlobContentAt(path))
     val toBecommitted = Diff.getDiffBetweenStageAnd(getContentFor, getStage())
 
     val untracked = stagedOpt
