@@ -38,7 +38,7 @@ case class Tree(
         trees
           .filter(_.name == x2)
           .headOption
-          .flatMap(_.getBlobContentAt(xs.mkString(Helper.separator)))
+          .flatMap(_.getBlobContentAt((x2 :: xs).mkString(Helper.separator)))
       case x :: Nil =>
         blobs
           .filter(_.name.split(Helper.separator).lastOption.contains(x))
