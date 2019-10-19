@@ -5,9 +5,10 @@ case class Stage private (treeOpt: Option[Tree]) {
       writeStageToRepository: String => Unit,
       writeTreeToRepository: Option[String] => (xml.Node => Unit),
       writeBlobToRepository: Option[String] => (String => Unit),
-      getBlobContentFrom: (String) => Option[String],
+      getFileContentFrom: (String) => Option[String],
       pathFiles: Seq[String]
   ) = {
+    println(pathFiles)
     val treeReducer = (treeOpt1: Option[Tree], treeOpt2: Option[Tree]) => {
       (treeOpt1, treeOpt2) match {
         case (Some(tree1), Some(tree2)) => Some(tree2.merge(tree1))
@@ -17,7 +18,7 @@ case class Stage private (treeOpt: Option[Tree]) {
       }
     }
 
-    val blobs = pathFiles.flatMap(Blob.loadFromWD(_, getBlobContentFrom))
+    val blobs = pathFiles.flatMap(Blob.loadFromWD(_, getFileContentFrom))
 
     val newTrees = blobs.flatMap { blob =>
       blob.name
