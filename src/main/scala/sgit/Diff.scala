@@ -101,7 +101,7 @@ object Diff {
           l2,
           i,
           j - 1,
-          diff.copy(changes = diff.changes :+ ("> ", l2(i - 1)))
+          diff.copy(changes = diff.changes :+ ("> ", l2(j - 1)))
         )
       } else if (i > 0 && (j == 0 || matrix(i)(j - 1) < matrix(i - 1)(j))) {
         printDiff(
