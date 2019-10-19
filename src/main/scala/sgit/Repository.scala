@@ -190,11 +190,13 @@ case class Repository private (sgitFilePath: String)(
 
     val getBlobContent = (path: String) =>
       Blob.loadFromWD(path, getContentFromWD).map(_.content)
-    val modified = Diff.getDiffBetweenStageAnd(getBlobContent, getStage())
+    val modified =
+      Diff.getChangedFilesBetweenStageAnd(getBlobContent, getStage())
 
     val getContentFor = (path: String) =>
       getHeadCommit().flatMap(_.rootTree.getBlobContentAt(path))
-    val toBecommitted = Diff.getDiffBetweenStageAnd(getContentFor, getStage())
+    val toBecommitted =
+      Diff.getChangedFilesBetweenStageAnd(getContentFor, getStage())
 
     val untracked = stagedOpt
       .map { staged =>
@@ -222,6 +224,19 @@ case class Repository private (sgitFilePath: String)(
       "untracked files:\n  (use \"sgit add <file>...\" to include in what will be committed)"
     )
     untracked.map(_.foreach(println))
+  }
+
+  def getDiff() = {
+    val printDiff = (change: (String, String)) =>
+      change match {
+        case ("< ", line) => Console.RED + s"-   $line" + Console.RESET
+        case ("> ", line) => Console.GREEN + s"+   $line" + Console.RESET
+        case _            => ""
+      }
+    val getBlobContent = (path: String) =>
+      Blob.loadFromWD(path, getContentFromWD).map(_.content)
+    val diffs = Diff.getDiffBetweenStageAnd(getBlobContent, getStage())
+    diffs.map(_.map(_.formatChanges(printDiff)).mkString)
   }
 }
 

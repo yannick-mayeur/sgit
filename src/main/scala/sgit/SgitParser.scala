@@ -25,6 +25,9 @@ object SgitParser extends App {
       cmd("log")
         .text("Log commit history")
         .action((_, c) => c.copy(command = "log")),
+      cmd("diff")
+        .text("Print diff beween stage and working directory")
+        .action((_, c) => c.copy(command = "diff")),
       cmd("branch")
         .text("Create a new branch")
         .action((_, c) => c.copy(command = "branch"))
@@ -104,6 +107,13 @@ object SgitParser extends App {
           Repository.getRepository(currentDirPath) match {
             case Some(repository) =>
               println(repository.getLog())
+            case _ => println("Not in a repository...")
+          }
+        case Config("diff", _, _, _) =>
+          Repository.getRepository(currentDirPath) match {
+            case Some(repository) =>
+              val diff = repository.getDiff()
+              diff.foreach(println)
             case _ => println("Not in a repository...")
           }
         case Config("branch", _, _, _) =>

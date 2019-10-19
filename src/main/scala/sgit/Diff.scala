@@ -2,10 +2,37 @@ package sgit
 import scala.annotation.tailrec
 import scala.collection.mutable
 
-case class Diff[T](changes: Seq[(String, T)])
+case class Change[T](changes: Seq[(String, T)])
+
+case class Diff[T](fileName: String, changes: Change[T]) {
+  def formatChanges(action: ((String, T)) => String): String = {
+    s"$fileName\n${changes.changes.map(action(_) + "\n").filter(_.trim.nonEmpty).mkString}"
+  }
+}
 
 object Diff {
   def getDiffBetweenStageAnd(
+      getContentFor: String => Option[String],
+      stage: Stage
+  ) = {
+    stage
+      .getStagedFiles()
+      .map(_.flatMap { path =>
+        val stagedContentOpt = stage.getContentFor(path)
+        val otherContentOpt = getContentFor(path)
+        for {
+          stagedContent <- stagedContentOpt
+          commitContent <- otherContentOpt
+        } yield {
+          val elem1 = stagedContent.split("\n")
+          val elem2 = commitContent.split("\n")
+          val d = Diff(path, Diff.getChangesBetweenElements(elem1, elem2))
+          d
+        }
+      })
+  }
+
+  def getChangedFilesBetweenStageAnd(
       getContentFor: String => Option[String],
       stage: Stage
   ) = {
@@ -20,7 +47,7 @@ object Diff {
         } yield {
           val elem1 = stagedContent.split("\n")
           val elem2 = commitContent.split("\n")
-          val d = Diff.getDiffBetweenElements(elem1, elem2)
+          val d = Diff.getChangesBetweenElements(elem1, elem2)
           d
         }
         diffs
@@ -39,19 +66,19 @@ object Diff {
   ) = {
     val getBlobContent = (path: String) =>
       Blob.loadFromWD(path, getContentInWD).map(_.content)
-    getDiffBetweenStageAnd(getBlobContent, stage)
+    getChangedFilesBetweenStageAnd(getBlobContent, stage)
       .map(_.isEmpty)
       .getOrElse(true)
   }
 
   def isDiffWithLastCommit(head: Commit, stage: Stage): Boolean = {
     val getContentFor = (path: String) => head.rootTree.getBlobContentAt(path)
-    getDiffBetweenStageAnd(getContentFor, stage)
+    getChangedFilesBetweenStageAnd(getContentFor, stage)
       .map(_.isEmpty)
       .getOrElse(true)
   }
 
-  def getDiffBetweenElements[T](elem1: Seq[T], elem2: Seq[T]) = {
+  def getChangesBetweenElements[T](elem1: Seq[T], elem2: Seq[T]) = {
 
     @tailrec
     def lcsLength[T](
@@ -83,8 +110,8 @@ object Diff {
         l2: Seq[T],
         i: Int,
         j: Int,
-        diff: Diff[T]
-    ): Diff[T] = {
+        diff: Change[T]
+    ): Change[T] = {
       if (i > 0 && j > 0 && l1(i - 1) == l2(j - 1)) {
         printDiff(
           matrix,
@@ -123,7 +150,7 @@ object Diff {
       elem2,
       elem1.size,
       elem2.size,
-      Diff(Seq())
+      Change(Seq())
     )
   }
 }

@@ -38,7 +38,7 @@ class DiffSpec extends FlatSpec with Matchers {
   "The Diff object" should "two lists of elements" in {
     val list1 = "ABCDEFGH"
     val list2 = "BDEZGHB"
-    val res = Diff.getDiffBetweenElements(list1.toList, list2.toList)
+    val res = Diff.getChangesBetweenElements(list1.toList, list2.toList)
     res.changes shouldEqual List(
       ("< ", 'A'),
       ("  ", 'B'),
@@ -57,7 +57,7 @@ class DiffSpec extends FlatSpec with Matchers {
     workingDirectory("ig") = "poltech"
     val getContentFor =
       (name: String) => Try(workingDirectory(name.drop(1))).toOption
-    val res = Diff.getDiffBetweenStageAnd(getContentFor, stage)
+    val res = Diff.getChangedFilesBetweenStageAnd(getContentFor, stage)
     res shouldEqual Some(List("/ig"))
   }
 
