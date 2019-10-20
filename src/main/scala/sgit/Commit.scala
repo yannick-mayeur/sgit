@@ -22,12 +22,16 @@ case class Commit(
     </Commit>
   }
 
-  def getLog(): String = {
-    s"""
-commit $hash
-date: $timestamp
-message: $message
-${previous.map(commit => s"\n${commit.getLog()}").getOrElse("")}"""
+  def getLog(
+      additionalInformation: Option[(Commit, Option[Commit]) => String]
+  ): String = {
+    s"""commit $hash
+       |date: $timestamp
+       |message: $message
+       |${additionalInformation.map(func => func(this, previous)).getOrElse("")}
+       |${previous
+         .map(commit => s"\n${commit.getLog(additionalInformation)}")
+         .getOrElse("")}""".stripMargin
   }
 
   def save(

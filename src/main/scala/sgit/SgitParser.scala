@@ -25,7 +25,15 @@ object SgitParser extends App {
         .action((_, c) => c.copy(command = "status")),
       cmd("log")
         .text("Log commit history")
-        .action((_, c) => c.copy(command = "log")),
+        .action((_, c) => c.copy(command = "log"))
+        .children(
+          opt[Unit]('p', "full-diff")
+            .action((_, c) => c.copy(ref = "full"))
+            .text("Log commit history with full diff"),
+          opt[Unit]("stat")
+            .action((_, c) => c.copy(ref = "stat"))
+            .text("Log commit history with diff stats")
+        ),
       cmd("diff")
         .text("Print diff beween stage and working directory")
         .action((_, c) => c.copy(command = "diff")),
@@ -109,7 +117,7 @@ object SgitParser extends App {
         case Config("log", _, _, _) =>
           Repository.getRepository(currentDirPath) match {
             case Some(repository) =>
-              println(repository.getLog())
+              println(repository.getLog(config.ref))
             case _ => println("Not in a repository...")
           }
         case Config("diff", _, _, _) =>

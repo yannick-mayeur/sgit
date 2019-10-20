@@ -9,17 +9,17 @@ class CommitSpec extends FlatSpec with Matchers {
     val previous = Commit(tree, "time", "message", None)
     val commit = Commit(tree, "time", "message2", Some(previous))
     val log = {
-      s"""
-commit ${commit.hash}
-date: time
-message: message2
-
-
-commit ${previous.hash}
-date: time
-message: message
-"""
+      s"""commit ${commit.hash}
+         |date: time
+         |message: message2
+         |
+         |
+         |commit ${previous.hash}
+         |date: time
+         |message: message
+         |
+         |""".stripMargin
     }
-    commit.getLog() shouldEqual log
+    commit.getLog(None) shouldEqual log
   }
 }

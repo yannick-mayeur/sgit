@@ -5,8 +5,8 @@ import scala.collection.mutable
 case class Change[T](changes: Seq[(String, T)])
 
 case class Diff[T](fileName: String, changes: Change[T]) {
-  def formatChanges(action: ((String, T)) => String): String = {
-    s"$fileName\n${changes.changes.map(action(_) + "\n").filter(_.trim.nonEmpty).mkString}"
+  def formatChanges(action: (Seq[(String, T)]) => String): String = {
+    s"$fileName\n${action(changes.changes)}"
   }
 }
 
@@ -30,6 +30,20 @@ object Diff {
           d
         }
       })
+  }
+
+  def getDiffBetweenTrees(
+      tree1: Tree,
+      tree2: Tree
+  ) = {
+    tree1
+      .getAllBlobs()
+      .map { blob =>
+        val content1 = blob.content.split("\n").toList
+        val content2 =
+          tree2.getBlobContentAt(blob.name).getOrElse("").split("\n").toList
+        Diff(blob.name, Diff.getChangesBetweenElements(content1, content2))
+      }
   }
 
   def getChangedFilesBetweenStageAnd(
