@@ -41,7 +41,7 @@ $ sgit --help
 - [x] branch -av
 - [x] tag \[\<name\>\]
 - [x] checkout \[\<branch tag or commit\>\]
-- [ ] merge (in progress)
+- [ ] merge (in progress in #19) 
 - [ ] rebase
 - [ ] rebase -i
 
