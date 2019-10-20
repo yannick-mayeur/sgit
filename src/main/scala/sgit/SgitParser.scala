@@ -6,7 +6,7 @@ case class Config(
     command: String = "",
     files: Seq[String] = Seq(),
     ref: String = "",
-    commit: String = ""
+    option: String = ""
 )
 
 object SgitParser extends App {
@@ -28,10 +28,10 @@ object SgitParser extends App {
         .action((_, c) => c.copy(command = "log"))
         .children(
           opt[Unit]('p', "full-diff")
-            .action((_, c) => c.copy(ref = "full"))
+            .action((_, c) => c.copy(option = "full"))
             .text("Log commit history with full diff"),
           opt[Unit]("stat")
-            .action((_, c) => c.copy(ref = "stat"))
+            .action((_, c) => c.copy(option = "stat"))
             .text("Log commit history with diff stats")
         ),
       cmd("diff")
@@ -42,7 +42,10 @@ object SgitParser extends App {
         .action((_, c) => c.copy(command = "branch"))
         .children(
           opt[Unit]('v', "verbose")
-            .action((_, c) => c.copy(ref = "verbose"))
+            .action((_, c) => c.copy(option = c.option + "v"))
+            .text("Log all branches in a verbose manner"),
+          opt[Unit]('a', "all")
+            .action((_, c) => c.copy(option = c.option + "a"))
             .text("Log all branches in a verbose manner"),
           arg[String]("<name>")
             .optional()
@@ -80,7 +83,7 @@ object SgitParser extends App {
           opt[String]('m', "message")
             .required()
             .valueName("<message>")
-            .action((x, c) => c.copy(commit = x))
+            .action((x, c) => c.copy(ref = x))
             .text("A message is required to commit")
         ),
       cmd("test")
@@ -122,13 +125,13 @@ object SgitParser extends App {
         case Config("commit", _, _, _) =>
           Repository.getRepository(currentDirPath) match {
             case Some(repository) =>
-              repository.commit(config.commit)
+              repository.commit(config.ref)
             case _ => println("Not in a repository...")
           }
         case Config("log", _, _, _) =>
           Repository.getRepository(currentDirPath) match {
             case Some(repository) =>
-              println(repository.getLog(config.ref))
+              println(repository.getLog(config.option))
             case _ => println("Not in a repository...")
           }
         case Config("diff", _, _, _) =>
@@ -141,7 +144,18 @@ object SgitParser extends App {
         case Config("branch", _, _, _) =>
           Repository.getRepository(currentDirPath) match {
             case Some(repository) =>
-              repository.createBranch(config.ref)
+              config.option match {
+                case "v" =>
+                  val res = repository.getVerboseBranches("v")
+                  println(res)
+                case "a" =>
+                  val res = repository.getVerboseBranches("a")
+                  println(res)
+                case "av" =>
+                  val res = repository.getVerboseBranches("av")
+                  println(res)
+                case _ => repository.createBranch(config.ref)
+              }
             case _ => println("Not in a repository...")
           }
         case Config("tag", _, _, _) =>

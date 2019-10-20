@@ -103,7 +103,7 @@ case class Repository private (sgitFilePath: String)(
       .listDirectoryFiles(
         s"$sgitFilePath${fileHelper.separator}.sgit${fileHelper.separator}tags"
       )
-      .map(_.drop(1))
+      .map(_.split(fileHelper.separator).toList.last)
   }
 
   def getAllBranchNames() = {
@@ -111,7 +111,41 @@ case class Repository private (sgitFilePath: String)(
       .listDirectoryFiles(
         s"$sgitFilePath${fileHelper.separator}.sgit${fileHelper.separator}branches"
       )
-      .map(_.drop(1))
+      .map(_.split(fileHelper.separator).toList.last)
+  }
+
+  def getVerboseBranches(option: String) = {
+    val branches = getAllBranchNames()
+      .flatMap(
+        Branch.load(
+          getBranchContent,
+          getCommitXmlFrom,
+          getTreeXmlFrom,
+          getBlobContent,
+          _
+        )
+      )
+    val tags = if (option.contains('a')) {
+      getAllTagNames()
+        .flatMap(
+          Tag.load(
+            getTagContent,
+            getCommitXmlFrom,
+            getTreeXmlFrom,
+            getBlobContent,
+            _
+          )
+        )
+    } else {
+      List.empty[Reference]
+    }
+    if (option.contains('v')) {
+      (branches ++ tags)
+        .map(_.verboseToString())
+        .mkString("\n")
+    } else {
+      (branches ++ tags).map(_.getName()).mkString("\n")
+    }
   }
 
   def getLog(param: String) = {
