@@ -56,6 +56,14 @@ case class Repository private (sgitFilePath: String)(
     filePath.replaceFirst(s"$sgitFilePath", "")
   }
 
+  lazy val getTagContent = fileHelper.getContent(
+    s"$sgitFilePath${fileHelper.separator}.sgit${fileHelper.separator}tags"
+  ) _
+  def writeTagToRepository =
+    fileHelper.writeFile(
+      s"$sgitFilePath${fileHelper.separator}.sgit${fileHelper.separator}tags"
+    ) _
+
   def getStage() = {
     Stage.loadStage(getStageContent, getTreeXmlFrom, getBlobContent)
   }
@@ -68,7 +76,8 @@ case class Repository private (sgitFilePath: String)(
           getCommitXmlFrom,
           getTreeXmlFrom,
           getBlobContent,
-          getBranchContent
+          getBranchContent,
+          getTagContent
         )
       )
   }
@@ -221,6 +230,19 @@ case class Repository private (sgitFilePath: String)(
       .map { commit =>
         writeBranchToRepository(Some(name))(commit.hash)
       }
+  }
+
+  def createTag(name: String): Either[String, Unit] = {
+    if (getTagContent(name).nonEmpty) {
+      Left(s"fatal: tag '$name' already exists")
+    } else {
+      Right(
+        getHeadCommit()
+          .map { commit =>
+            writeTagToRepository(Some(name))(commit.hash)
+          }
+      )
+    }
   }
 
   def printStatus(): Unit = {

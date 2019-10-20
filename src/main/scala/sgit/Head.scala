@@ -8,7 +8,8 @@ case class Head(category: String, ref: String) {
       getCommitXmlFrom: String => Option[xml.Node],
       getTreeXmlFrom: String => Option[xml.Node],
       getBlobContentFrom: String => Option[String],
-      getBranchContentFrom: String => Option[String]
+      getBranchContentFrom: String => Option[String],
+      getTagContentFrom: String => Option[String]
   ) = category match {
     case "commit" =>
       getCommitXmlFrom(ref)
@@ -30,22 +31,42 @@ case class Head(category: String, ref: String) {
                 )
             )
         }
-
+    case "tag" =>
+      getTagContentFrom(ref)
+        .flatMap { ref =>
+          getCommitXmlFrom(ref)
+            .flatMap(
+              Commit
+                .fromXml(
+                  getCommitXmlFrom,
+                  getTreeXmlFrom,
+                  getBlobContentFrom,
+                  _
+                )
+            )
+        }
   }
 
   def update(
       writeHeadToRepository: xml.Node => Unit,
       writeBranchToRepository: Option[String] => (String => Unit),
       hash: String
-  ) = category match {
-    case "commit" =>
-      val newHead = this.copy(ref = hash)
+  ) = {
+    def updateDetached(hash: String) = {
+      val newHead = this.copy(category = "commit", ref = hash)
       newHead.save(writeHeadToRepository)
       newHead
-    case "branch" =>
-      Branch(ref, hash).save(writeBranchToRepository)
-      this
-    case _ => this
+    }
+    category match {
+      case "commit" =>
+        updateDetached(hash)
+      case "branch" =>
+        Branch(ref, hash).save(writeBranchToRepository)
+        this
+      case "tag" =>
+        updateDetached(hash)
+      case _ => this
+    }
   }
 
   def save(writeHeadToRepository: xml.Node => Unit): Unit = {

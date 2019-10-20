@@ -28,13 +28,15 @@ class HeadSpec extends FlatSpec with Matchers {
       (str: String) => Some(Tree("", Seq(), Seq(Blob("/foo", "bar"))).toXml())
     val getBlobContentFrom = (str: String) => Some("bar")
     val getBranchContentFrom = (str: String) => None
+    val getTagContentFrom = (str: String) => None
     val head = Head("commit", commit.hash)
 
     val res = head.getCommit(
       getCommitXmlFrom,
       getTreeFromXmlFrom,
       getBlobContentFrom,
-      getBranchContentFrom
+      getBranchContentFrom,
+      getTagContentFrom
     )
     res shouldEqual Some(commit)
   }
@@ -54,19 +56,63 @@ class HeadSpec extends FlatSpec with Matchers {
     val getBlobContentFrom = (str: String) => Some("bar")
     val getBranchContentFrom =
       (name: String) => Try(repositoryBranches(name)).toOption
+    val getTagContentFrom = (str: String) => None
     val head = Head("branch", branch.name)
 
     val res = head.getCommit(
       getCommitXmlFrom,
       getTreeFromXmlFrom,
       getBlobContentFrom,
-      getBranchContentFrom
+      getBranchContentFrom,
+      getTagContentFrom
+    )
+    res shouldEqual Some(commit)
+  }
+
+  it should "get head commit when on tag" in {
+    val repositoryCommits = mutable.Map.empty[String, xml.Node]
+    val repositoryTags = mutable.Map.empty[String, String]
+    val commit =
+      Commit(Tree("", Seq(), Seq(Blob("/foo", "bar"))), "time", "message", None)
+    val tag = sgit.Tag("v1", commit.hash)
+    repositoryCommits(commit.hash) = commit.toXml()
+    repositoryTags(tag.name) = tag.hash
+    val getCommitXmlFrom =
+      (hash: String) => Try(repositoryCommits(hash)).toOption
+    val getTreeFromXmlFrom =
+      (str: String) => Some(Tree("", Seq(), Seq(Blob("/foo", "bar"))).toXml())
+    val getBlobContentFrom = (str: String) => Some("bar")
+    val getTagContentFrom =
+      (name: String) => Try(repositoryTags(name)).toOption
+    val getBranchContentFrom = (str: String) => None
+    val head = Head("tag", tag.name)
+
+    val res = head.getCommit(
+      getCommitXmlFrom,
+      getTreeFromXmlFrom,
+      getBlobContentFrom,
+      getBranchContentFrom,
+      getTagContentFrom
     )
     res shouldEqual Some(commit)
   }
 
   it should "update when detached" in {
     val head = Head("commit", "hash1")
+    var repositoryHead = head.toXml().toString()
+    val writeHeadToRepository =
+      (xmlTree: xml.Node) => repositoryHead = xmlTree.toString()
+    val writeBranchToRepository =
+      (name: Option[String]) => (content: String) => ()
+
+    val newHead =
+      head.update(writeHeadToRepository, writeBranchToRepository, "hash2")
+    newHead shouldEqual Head("commit", "hash2")
+    repositoryHead shouldEqual Head("commit", "hash2").toXml.toString()
+  }
+
+  it should "update when detached on tag" in {
+    val head = Head("tag", "v1")
     var repositoryHead = head.toXml().toString()
     val writeHeadToRepository =
       (xmlTree: xml.Node) => repositoryHead = xmlTree.toString()
