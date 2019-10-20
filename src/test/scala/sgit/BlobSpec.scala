@@ -18,8 +18,8 @@ class BlobSpec extends FlatSpec with Matchers {
         (content: String) => name.foreach(workingDirectory(_) = content)
     val blob = Blob("/foo", "bar")
     blob.toWorkingDirectory(writeToWorkingDirectory)
-    assert(workingDirectory.contains(blob.name))
-    workingDirectory(blob.name) shouldEqual "bar"
+    assert(workingDirectory.contains(blob.name.drop(1)))
+    workingDirectory(blob.name.drop(1)) shouldEqual "bar"
   }
 
   it should "write to repository" in {

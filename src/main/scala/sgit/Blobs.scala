@@ -10,7 +10,7 @@ case class Blob(
   def toWorkingDirectory(
       writeToWorkingDirectory: Option[String] => (String => Unit)
   ): Unit = {
-    writeToWorkingDirectory(Some(name))(content)
+    writeToWorkingDirectory(Some(Blob.formatForWD(name)))(content)
   }
 
   def save(writeToRepository: Option[String] => (String => Unit)): Unit = {
@@ -19,8 +19,10 @@ case class Blob(
 }
 
 object Blob {
+  def formatForWD(path: String) = path.drop(1)
+
   def loadFromWD(path: String, getBlobContentFrom: String => Option[String]) = {
-    getBlobContentFrom(path.drop(1)).map(Blob(path, _))
+    getBlobContentFrom(formatForWD(path)).map(Blob(path, _))
   }
 
   def loadFromRepo(
