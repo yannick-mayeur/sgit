@@ -24,8 +24,8 @@ object Diff {
           stagedContent <- stagedContentOpt
           commitContent <- otherContentOpt
         } yield {
-          val elem1 = stagedContent.split("\n")
-          val elem2 = commitContent.split("\n")
+          val elem1 = stagedContent.split("\n").toList
+          val elem2 = commitContent.split("\n").toList
           val d = Diff(path, Diff.getChangesBetweenElements(elem1, elem2))
           d
         }
@@ -45,8 +45,8 @@ object Diff {
           stagedContent <- stagedContentOpt
           commitContent <- otherContentOpt
         } yield {
-          val elem1 = stagedContent.split("\n")
-          val elem2 = commitContent.split("\n")
+          val elem1 = stagedContent.split("\n").toList
+          val elem2 = commitContent.split("\n").toList
           val d = Diff.getChangesBetweenElements(elem1, elem2)
           d
         }
