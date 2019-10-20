@@ -1,5 +1,6 @@
 package sgit
 import scopt.OParser
+import sgit.fileIO.FileHelper
 
 case class Config(
     command: String = "",
@@ -75,6 +76,8 @@ object SgitParser extends App {
     )
   }
   val currentDirPath = System.getProperty("user.dir")
+  implicit val fileHelper = new FileHelper()
+
   OParser.parse(parser1, args, Config()) match {
     case Some(config) =>
       config match {
