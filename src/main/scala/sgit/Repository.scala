@@ -259,7 +259,7 @@ case class Repository private (sgitFilePath: String)(
       Right(
         getHeadCommit()
           .map { commit =>
-            writeTagToRepository(Some(name))(commit.hash)
+            Tag(name, commit).save(writeTagToRepository)
           }
       )
     }

@@ -74,9 +74,9 @@ class HeadSpec extends FlatSpec with Matchers {
     val repositoryTags = mutable.Map.empty[String, String]
     val commit =
       Commit(Tree("", Seq(), Seq(Blob("/foo", "bar"))), "time", "message", None)
-    val tag = sgit.Tag("v1", commit.hash)
+    val tag = sgit.Tag("v1", commit)
     repositoryCommits(commit.hash) = commit.toXml()
-    repositoryTags(tag.name) = tag.hash
+    repositoryTags(tag.name) = tag.commit.hash
     val getCommitXmlFrom =
       (hash: String) => Try(repositoryCommits(hash)).toOption
     val getTreeFromXmlFrom =
