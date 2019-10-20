@@ -50,21 +50,21 @@ case class Head(category: String, ref: String) {
   def update(
       writeHeadToRepository: xml.Node => Unit,
       writeBranchToRepository: Option[String] => (String => Unit),
-      hash: String
+      commit: Commit
   ) = {
-    def updateDetached(hash: String) = {
-      val newHead = this.copy(category = "commit", ref = hash)
+    def updateDetached(commit: Commit) = {
+      val newHead = this.copy(category = "commit", ref = commit.hash)
       newHead.save(writeHeadToRepository)
       newHead
     }
     category match {
       case "commit" =>
-        updateDetached(hash)
+        updateDetached(commit)
       case "branch" =>
-        Branch(ref, hash).save(writeBranchToRepository)
+        Branch(ref, commit).save(writeBranchToRepository)
         this
       case "tag" =>
-        updateDetached(hash)
+        updateDetached(commit)
       case _ => this
     }
   }
@@ -84,11 +84,11 @@ object Head {
   def initialCommit(
       writeHeadToRepository: xml.Node => Unit,
       writeBranchToRepository: Option[String] => (String => Unit),
-      hash: String
+      commit: Commit
   ) = {
     val head = Head("branch", "master")
     head.save(writeHeadToRepository)
-    Branch("master", hash).save(writeBranchToRepository)
+    Branch("master", commit).save(writeBranchToRepository)
     head
   }
 }

@@ -46,9 +46,9 @@ class HeadSpec extends FlatSpec with Matchers {
     val repositoryBranches = mutable.Map.empty[String, String]
     val commit =
       Commit(Tree("", Seq(), Seq(Blob("/foo", "bar"))), "time", "message", None)
-    val branch = Branch("master", commit.hash)
+    val branch = Branch("master", commit)
     repositoryCommits(commit.hash) = commit.toXml()
-    repositoryBranches(branch.name) = branch.head
+    repositoryBranches(branch.name) = branch.head.hash
     val getCommitXmlFrom =
       (hash: String) => Try(repositoryCommits(hash)).toOption
     val getTreeFromXmlFrom =
@@ -105,10 +105,11 @@ class HeadSpec extends FlatSpec with Matchers {
     val writeBranchToRepository =
       (name: Option[String]) => (content: String) => ()
 
+    val commit = Commit(Tree("", Seq(), Seq()), "time", "message", None)
     val newHead =
-      head.update(writeHeadToRepository, writeBranchToRepository, "hash2")
-    newHead shouldEqual Head("commit", "hash2")
-    repositoryHead shouldEqual Head("commit", "hash2").toXml.toString()
+      head.update(writeHeadToRepository, writeBranchToRepository, commit)
+    newHead shouldEqual Head("commit", commit.hash)
+    repositoryHead shouldEqual Head("commit", commit.hash).toXml.toString()
   }
 
   it should "update when detached on tag" in {
@@ -119,27 +120,31 @@ class HeadSpec extends FlatSpec with Matchers {
     val writeBranchToRepository =
       (name: Option[String]) => (content: String) => ()
 
+    val commit = Commit(Tree("", Seq(), Seq()), "time", "message", None)
     val newHead =
-      head.update(writeHeadToRepository, writeBranchToRepository, "hash2")
-    newHead shouldEqual Head("commit", "hash2")
-    repositoryHead shouldEqual Head("commit", "hash2").toXml.toString()
+      head.update(writeHeadToRepository, writeBranchToRepository, commit)
+    newHead shouldEqual Head("commit", commit.hash)
+    repositoryHead shouldEqual Head("commit", commit.hash).toXml.toString()
   }
 
   it should "update when on branch" in {
     val head = Head("branch", "master")
+    val commit = Commit(Tree("", Seq(), Seq()), "time", "message", None)
     var repositoryHead = head.toXml().toString()
     val repositoryBranches = mutable.Map.empty[String, String]
-    repositoryBranches("master") = "hash1"
+    repositoryBranches("master") = commit.hash
     val writeHeadToRepository =
       (xmlTree: xml.Node) => repositoryHead = xmlTree.toString()
     val writeBranchToRepository = (name: Option[String]) =>
       (content: String) => name.foreach(repositoryBranches(_) = content)
 
+    val commit2 =
+      Commit(Tree("", Seq(), Seq()), "time", "message", Some(commit))
     val newHead =
-      head.update(writeHeadToRepository, writeBranchToRepository, "hash2")
+      head.update(writeHeadToRepository, writeBranchToRepository, commit2)
     newHead shouldEqual Head("branch", "master")
     repositoryHead shouldEqual Head("branch", "master").toXml.toString()
-    repositoryBranches("master") shouldEqual "hash2"
+    repositoryBranches("master") shouldEqual commit2.hash
   }
 
   "The Head Companion" should "initialze on master branch" in {
@@ -150,10 +155,11 @@ class HeadSpec extends FlatSpec with Matchers {
     val writeBranchToRepository = (name: Option[String]) =>
       (content: String) => name.foreach(repositoryBranches(_) = content)
 
+    val commit = Commit(Tree("", Seq(), Seq()), "time", "message", None)
     val res =
-      Head.initialCommit(writeHeadToRepository, writeBranchToRepository, "hash")
+      Head.initialCommit(writeHeadToRepository, writeBranchToRepository, commit)
     res shouldEqual Head("branch", "master")
-    repositoryBranches("master") shouldEqual "hash"
+    repositoryBranches("master") shouldEqual commit.hash
   }
 
 }

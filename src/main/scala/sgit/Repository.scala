@@ -82,14 +82,18 @@ case class Repository private (sgitFilePath: String)(
       )
   }
 
-  def updateHeadWith(hash: String) = {
+  def updateHeadWith(commit: Commit) = {
     getHeadContent()
       .map(Head.fromXml(_))
-      .map(_.update(writeHeadToRepository, writeBranchToRepository, hash))
+      .map(_.update(writeHeadToRepository, writeBranchToRepository, commit))
       .orElse(
         Some(
           Head
-            .initialCommit(writeHeadToRepository, writeBranchToRepository, hash)
+            .initialCommit(
+              writeHeadToRepository,
+              writeBranchToRepository,
+              commit
+            )
         )
       )
   }
@@ -238,7 +242,7 @@ case class Repository private (sgitFilePath: String)(
         writeBlobsToRepository
       )
     )
-    commit.map(commit => updateHeadWith(commit.hash))
+    commit.map(commit => updateHeadWith(commit))
   }
 
   def createBranch(name: String): Unit = {
