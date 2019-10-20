@@ -85,10 +85,48 @@ case class Repository private (sgitFilePath: String)(
       )
   }
 
-  def getLog() = {
+  def getLog(param: String) = {
+    val printDiff = (changes: Seq[(String, String)]) => {
+      val format = (change: (String, String)) =>
+        change match {
+          case ("< ", line) => Console.RED + s"-   $line" + Console.RESET
+          case ("> ", line) => Console.GREEN + s"+   $line" + Console.RESET
+          case _            => ""
+        }
+      changes.map(format(_) + "\n").filter(_.trim.nonEmpty).mkString
+    }
+    val printStats = (changes: Seq[(String, String)]) => {
+      s"""${Console.GREEN}insertions: ${changes
+        .count(_._1 == "> ")
+        .toString()}${Console.RESET}
+         |${Console.RED}removals: ${changes
+        .count(_._1 == "< ")
+        .toString()}${Console.RESET}"""
+    }
+
+    val fullDiff = (c1: Commit, c2: Option[Commit]) => {
+      val t1 = c1.rootTree
+      val t2 = c2.map(_.rootTree).getOrElse(Tree("", Seq(), Seq()))
+      Diff
+        .getDiffBetweenTrees(t1, t2)
+        .map(_.formatChanges(printDiff))
+        .mkString("\n")
+    }
+    val stats = (c1: Commit, c2: Option[Commit]) => {
+      val t1 = c1.rootTree
+      val t2 = c2.map(_.rootTree).getOrElse(Tree("", Seq(), Seq()))
+      Diff
+        .getDiffBetweenTrees(t1, t2)
+        .map(_.formatChanges(printStats))
+        .mkString("\n")
+    }
     getHeadCommit()
       .map { commit =>
-        commit.getLog()
+        param match {
+          case "full" => commit.getLog(Some(fullDiff))
+          case "stat" => commit.getLog(Some(stats))
+          case _      => commit.getLog(None)
+        }
       }
       .getOrElse("")
   }
@@ -227,12 +265,15 @@ case class Repository private (sgitFilePath: String)(
   }
 
   def getDiff() = {
-    val printDiff = (change: (String, String)) =>
-      change match {
-        case ("< ", line) => Console.RED + s"-   $line" + Console.RESET
-        case ("> ", line) => Console.GREEN + s"+   $line" + Console.RESET
-        case _            => ""
-      }
+    val printDiff = (changes: Seq[(String, String)]) => {
+      val format = (change: (String, String)) =>
+        change match {
+          case ("< ", line) => Console.RED + s"-   $line" + Console.RESET
+          case ("> ", line) => Console.GREEN + s"+   $line" + Console.RESET
+          case _            => ""
+        }
+      changes.map(format(_) + "\n").filter(_.trim.nonEmpty).mkString
+    }
     val getBlobContent = (path: String) =>
       Blob.loadFromWD(path, getContentFromWD).map(_.content)
     val diffs = Diff.getDiffBetweenStageAnd(getBlobContent, getStage())
