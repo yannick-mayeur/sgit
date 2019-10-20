@@ -94,6 +94,22 @@ case class Repository private (sgitFilePath: String)(
       )
   }
 
+  def getAllTagNames() = {
+    fileHelper
+      .listDirectoryFiles(
+        s"$sgitFilePath${fileHelper.separator}.sgit${fileHelper.separator}tags"
+      )
+      .map(_.drop(1))
+  }
+
+  def getAllBranchNames() = {
+    fileHelper
+      .listDirectoryFiles(
+        s"$sgitFilePath${fileHelper.separator}.sgit${fileHelper.separator}branches"
+      )
+      .map(_.drop(1))
+  }
+
   def getLog(param: String) = {
     val printDiff = (changes: Seq[(String, String)]) => {
       val format = (change: (String, String)) =>

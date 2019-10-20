@@ -50,10 +50,15 @@ class RepositrySpec
     aFileHelper.createFolder(*) returns true
     aFileHelper.separator returns separator
     ((path: String) => {
-      files.keys.toList
+      val res = files.keys.toList
         .filter(_.startsWith(path))
-        .filterNot(_.contains(".sgit"))
-        .map(_.replaceFirst(path, ""))
+      if (path.contains(".sgit")) {
+        res.map(_.replaceFirst(path, ""))
+      } else {
+        res
+          .filterNot(_.contains(".sgit"))
+          .map(_.replaceFirst(path, ""))
+      }
     }) willBe answered by aFileHelper.listDirectoryFiles(*)
   }
 
@@ -151,5 +156,22 @@ class RepositrySpec
     repo.addFiles(Seq("/repo/foo"))
     repo.commit("c2")
     repo.createTag("v1").toOption shouldBe None
+  }
+
+  it should "return all branch names" in {
+    val repo = Repository.initRepository(currentDirPath).get
+    repo.addFiles(Seq("/repo/foo"))
+    repo.commit("c1")
+    repo.createBranch("dev")
+    repo.getAllBranchNames().toSet shouldEqual Set("master", "dev")
+  }
+
+  it should "return all tag names" in {
+    val repo = Repository.initRepository(currentDirPath).get
+    repo.addFiles(Seq("/repo/foo"))
+    repo.commit("c1")
+    repo.createTag("v1")
+    repo.createTag("v2")
+    repo.getAllTagNames().toSet shouldEqual Set("v2", "v1")
   }
 }

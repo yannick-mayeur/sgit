@@ -41,8 +41,11 @@ object SgitParser extends App {
         .text("Create a new branch")
         .action((_, c) => c.copy(command = "branch"))
         .children(
+          opt[Unit]('v', "verbose")
+            .action((_, c) => c.copy(ref = "verbose"))
+            .text("Log all branches in a verbose manner"),
           arg[String]("<name>")
-            .required()
+            .optional()
             .action((b, c) => c.copy(ref = b))
         ),
       cmd("tag")
