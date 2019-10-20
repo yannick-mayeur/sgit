@@ -45,6 +45,14 @@ object SgitParser extends App {
             .required()
             .action((b, c) => c.copy(ref = b))
         ),
+      cmd("tag")
+        .text("Tag current commit")
+        .action((_, c) => c.copy(command = "tag"))
+        .children(
+          arg[String]("<name>")
+            .required()
+            .action((t, c) => c.copy(ref = t))
+        ),
       cmd("checkout")
         .text("Checkout a particular commit, branch or tag")
         .action((_, c) => c.copy(command = "checkout"))
@@ -131,6 +139,15 @@ object SgitParser extends App {
           Repository.getRepository(currentDirPath) match {
             case Some(repository) =>
               repository.createBranch(config.ref)
+            case _ => println("Not in a repository...")
+          }
+        case Config("tag", _, _, _) =>
+          Repository.getRepository(currentDirPath) match {
+            case Some(repository) =>
+              repository.createTag(config.ref) match {
+                case Left(error) => println(error)
+                case _           =>
+              }
             case _ => println("Not in a repository...")
           }
         case Config("test", _, _, _) => ???

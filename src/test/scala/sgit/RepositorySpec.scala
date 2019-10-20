@@ -49,7 +49,12 @@ class RepositrySpec
 
     aFileHelper.createFolder(*) returns true
     aFileHelper.separator returns separator
-    aFileHelper.listDirectoryFiles(*) returns files.keys.toList
+    ((path: String) => {
+      files.keys.toList
+        .filter(_.startsWith(path))
+        .filterNot(_.contains(".sgit"))
+        .map(_.replaceFirst(path, ""))
+    }) willBe answered by aFileHelper.listDirectoryFiles(*)
   }
 
   after {
@@ -127,5 +132,24 @@ class RepositrySpec
     Try(files("/repo/foo")).toOption shouldEqual Some("baz")
     repo.checkout("master")
     Try(files("/repo/foo")).toOption shouldEqual Some("bar")
+  }
+
+  it should "create tag" in {
+    val repo = Repository.initRepository(currentDirPath).get
+    repo.addFiles(Seq("/repo/foo"))
+    repo.commit("c1")
+    repo.createTag("v1")
+    Try(files("/repo/.sgit/tags/v1")).toOption shouldBe defined
+  }
+
+  it should "not create tag if exists" in {
+    val repo = Repository.initRepository(currentDirPath).get
+    repo.addFiles(Seq("/repo/foo"))
+    repo.commit("c1")
+    repo.createTag("v1")
+    files("/repo/foo") = "baz"
+    repo.addFiles(Seq("/repo/foo"))
+    repo.commit("c2")
+    repo.createTag("v1").toOption shouldBe None
   }
 }
