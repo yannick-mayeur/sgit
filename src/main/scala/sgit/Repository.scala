@@ -241,22 +241,29 @@ case class Repository private (sgitFilePath: String)(
 }
 
 object Repository {
-  implicit val fileHelper = new FileHelper()
-
-  def initRepository(path: String): Option[Repository] = {
+  def initRepository(
+      path: String
+  )(implicit fileHelper: FileHelper): Option[Repository] = {
     if (getRepository(path).isEmpty) {
-      val hasMadeSgit = fileHelper.createFolder(".sgit")
+      val hasMadeSgit =
+        fileHelper.createFolder(s"$path${fileHelper.separator}.sgit")
       val files =
         List("HEAD", "STAGE", s"branches${fileHelper.separator}master")
       val folders = List("tags", "trees", "blobs", "branches", "commits")
       val hasCreatedFolders = folders
         .map(
-          file => fileHelper.createFolder(s".sgit${fileHelper.separator}$file")
+          file =>
+            fileHelper.createFolder(
+              s"$path${fileHelper.separator}.sgit${fileHelper.separator}$file"
+            )
         )
         .reduce(_ && _)
       val hasCreatedFiles = files
         .map(
-          (file) => fileHelper.createFile(s".sgit${fileHelper.separator}$file")
+          (file) =>
+            fileHelper.createFile(
+              s"$path${fileHelper.separator}.sgit${fileHelper.separator}$file"
+            )
         )
         .reduce(_ && _)
       if (hasCreatedFiles && hasCreatedFolders) Some(Repository(path)) else None
@@ -265,7 +272,7 @@ object Repository {
     }
   }
 
-  def getRepository(path: String) = {
+  def getRepository(path: String)(implicit fileHelper: FileHelper) = {
     def loop(folders: List[String], currentPath: String): Option[Repository] = {
       folders match {
         case x :: xs =>
