@@ -52,3 +52,6 @@ The test suite can be launched with:
 ```
 $ sbt test
 ```
+
+
+CECI EST UN TEST
